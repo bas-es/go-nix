@@ -9,11 +9,11 @@ import "fmt"
 const maxstack = 64
 
 
-//line machine.rl:99
+//line machine.rl:101
 
 
 
-//line machine.go:17
+//line machine.go:14
 const expr_start int = 22
 const expr_first_final int = 22
 const expr_error int = 0
@@ -23,7 +23,7 @@ const expr_en_istring int = 82
 const expr_en_expr int = 22
 
 
-//line machine.rl:102
+//line machine.rl:104
 
 func lexData(data []byte, r *lexResult) (err error) {
 	var cs, act, ts, te, top int
@@ -31,7 +31,7 @@ func lexData(data []byte, r *lexResult) (err error) {
 	p, pe := 0, len(data)
 	eof := pe
 
-//line machine.go:35
+//line machine.go:30
 	{
 	cs = expr_start
 	top = 0
@@ -40,7 +40,7 @@ func lexData(data []byte, r *lexResult) (err error) {
 	act = 0
 	}
 
-//line machine.rl:109
+//line machine.rl:111
 	_, _, _, _, _ = expr_first_final, expr_error, expr_en_qstring, expr_en_istring, expr_en_expr
 	if r.file == nil {
 		r.file = fileset.AddFile("(string)", -1, len(data))
@@ -102,7 +102,7 @@ func lexData(data []byte, r *lexResult) (err error) {
 	}
 
 
-//line machine.go:106
+//line machine.go:99
 	{
 	if p == pe {
 		goto _test_eof
@@ -469,7 +469,7 @@ _resume:
 	}
 	goto st_out
 tr0:
-//line machine.rl:95
+//line machine.rl:97
 p = (te) - 1
 { tok(int(data[ts])) }
 	goto st22
@@ -526,7 +526,7 @@ tr5:
 	case 39:
 	{p = (te) - 1
  tok(concat) }
-	case 48:
+	case 50:
 	{p = (te) - 1
  tok(int(data[ts])) }
 	}
@@ -543,7 +543,7 @@ te = p+1
 { tok(path) }
 	goto st22
 tr31:
-//line machine.rl:95
+//line machine.rl:97
 te = p+1
 { tok(int(data[ts])) }
 	goto st22
@@ -553,37 +553,37 @@ te = p+1
 { r.file.AddLine(ts) }
 	goto st22
 tr35:
-//line machine.rl:84
+//line machine.rl:86
 te = p+1
 { tokenter('"', '"'); { if nostack() { return }; {stack[top] = 22; top++; goto st79 }} }
 	goto st22
 tr40:
-//line machine.rl:88
+//line machine.rl:90
 te = p+1
 { tokenter('(', ')'); { if nostack() { return }; {stack[top] = 22; top++; goto st22 }} }
 	goto st22
 tr41:
-//line machine.rl:91
+//line machine.rl:93
 te = p+1
 { if !tokleave(int(data[ts])) { return }; {top--; cs = stack[top];goto _again } }
 	goto st22
 tr48:
-//line machine.rl:93
+//line machine.rl:95
 te = p+1
 { if !tokarg() { return }; }
 	goto st22
 tr53:
-//line machine.rl:89
+//line machine.rl:91
 te = p+1
 { tokenter('[', ']'); { if nostack() { return }; {stack[top] = 22; top++; goto st22 }} }
 	goto st22
 tr63:
-//line machine.rl:90
+//line machine.rl:92
 te = p+1
 { tokenter('{', '}'); { if nostack() { return }; {stack[top] = 22; top++; goto st22 }} }
 	goto st22
 tr66:
-//line machine.rl:95
+//line machine.rl:97
 te = p
 p--
 { tok(int(data[ts])) }
@@ -612,7 +612,7 @@ p--
 { tokcomment(comment) }
 	goto st22
 tr73:
-//line machine.rl:87
+//line machine.rl:89
 te = p+1
 { tokenter(interp, '}'); { if nostack() { return }; {stack[top] = 22; top++; goto st22 }} }
 	goto st22
@@ -622,7 +622,7 @@ te = p+1
 { tok(and) }
 	goto st22
 tr75:
-//line machine.rl:85
+//line machine.rl:87
 te = p+1
 { tokenter(ii, ii); { if nostack() { return }; {stack[top] = 22; top++; goto st82 }}  }
 	goto st22
@@ -660,33 +660,43 @@ te = p+1
 { tok(leq) }
 	goto st22
 tr88:
+//line machine.rl:84
+te = p+1
+{ tok(pipe_from) }
+	goto st22
+tr89:
 //line machine.rl:77
 te = p+1
 { tok(eq) }
 	goto st22
-tr89:
+tr90:
 //line machine.rl:80
 te = p+1
 { tok(geq) }
 	goto st22
-tr90:
+tr91:
 //line machine.rl:65
 te = p
 p--
 { tok(uri) }
 	goto st22
-tr101:
+tr102:
 //line machine.rl:53
 te = p
 p--
 { tok(in) }
 	goto st22
-tr118:
+tr119:
+//line machine.rl:83
+te = p+1
+{ tok(pipe_into) }
+	goto st22
+tr120:
 //line machine.rl:75
 te = p+1
 { tok(or) }
 	goto st22
-tr120:
+tr122:
 //line machine.rl:67
 te = p
 p--
@@ -703,7 +713,7 @@ ts = 0
 //line NONE:1
 ts = p
 
-//line machine.go:707
+//line machine.go:710
 		switch data[p] {
 		case 0:
 			goto tr30
@@ -805,7 +815,7 @@ te = p+1
 			goto _test_eof23
 		}
 	st_case_23:
-//line machine.go:809
+//line machine.go:812
 		if data[p] == 46 {
 			goto st1
 		}
@@ -829,7 +839,7 @@ te = p+1
 			goto _test_eof24
 		}
 	st_case_24:
-//line machine.go:833
+//line machine.go:836
 		switch data[p] {
 		case 69:
 			goto st2
@@ -939,15 +949,15 @@ tr42:
 //line NONE:1
 te = p+1
 
-//line machine.rl:95
-act = 48;
+//line machine.rl:97
+act = 50;
 	goto st32
 	st32:
 		if p++; p == pe {
 			goto _test_eof32
 		}
 	st_case_32:
-//line machine.go:951
+//line machine.go:954
 		switch data[p] {
 		case 43:
 			goto tr76
@@ -988,7 +998,7 @@ act = 39;
 			goto _test_eof33
 		}
 	st_case_33:
-//line machine.go:992
+//line machine.go:995
 		switch data[p] {
 		case 43:
 			goto st4
@@ -1124,15 +1134,15 @@ tr43:
 //line NONE:1
 te = p+1
 
-//line machine.rl:95
-act = 48;
+//line machine.rl:97
+act = 50;
 	goto st36
 	st36:
 		if p++; p == pe {
 			goto _test_eof36
 		}
 	st_case_36:
-//line machine.go:1136
+//line machine.go:1139
 		switch data[p] {
 		case 43:
 			goto st4
@@ -1160,15 +1170,15 @@ tr44:
 //line NONE:1
 te = p+1
 
-//line machine.rl:95
-act = 48;
+//line machine.rl:97
+act = 50;
 	goto st37
 	st37:
 		if p++; p == pe {
 			goto _test_eof37
 		}
 	st_case_37:
-//line machine.go:1172
+//line machine.go:1175
 		switch data[p] {
 		case 43:
 			goto st4
@@ -1234,7 +1244,7 @@ act = 27;
 			goto _test_eof38
 		}
 	st_case_38:
-//line machine.go:1238
+//line machine.go:1241
 		switch data[p] {
 		case 43:
 			goto st4
@@ -1338,7 +1348,7 @@ act = 27;
 			goto _test_eof39
 		}
 	st_case_39:
-//line machine.go:1342
+//line machine.go:1345
 		switch data[p] {
 		case 43:
 			goto st4
@@ -1375,7 +1385,7 @@ te = p+1
 			goto _test_eof40
 		}
 	st_case_40:
-//line machine.go:1379
+//line machine.go:1382
 		switch data[p] {
 		case 42:
 			goto st9
@@ -1432,7 +1442,7 @@ act = 28;
 			goto _test_eof41
 		}
 	st_case_41:
-//line machine.go:1436
+//line machine.go:1439
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1498,7 +1508,7 @@ act = 29;
 			goto _test_eof43
 		}
 	st_case_43:
-//line machine.go:1502
+//line machine.go:1505
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1536,7 +1546,7 @@ act = 28;
 			goto _test_eof44
 		}
 	st_case_44:
-//line machine.go:1540
+//line machine.go:1543
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1574,7 +1584,7 @@ te = p+1
 			goto _test_eof45
 		}
 	st_case_45:
-//line machine.go:1578
+//line machine.go:1581
 		switch data[p] {
 		case 43:
 			goto st11
@@ -1582,6 +1592,8 @@ te = p+1
 			goto tr87
 		case 95:
 			goto st11
+		case 124:
+			goto tr88
 		}
 		switch {
 		case data[p] < 48:
@@ -1664,7 +1676,7 @@ te = p+1
 		}
 	st_case_46:
 		if data[p] == 61 {
-			goto tr88
+			goto tr89
 		}
 		goto tr66
 	st47:
@@ -1673,7 +1685,7 @@ te = p+1
 		}
 	st_case_47:
 		if data[p] == 61 {
-			goto tr89
+			goto tr90
 		}
 		goto tr66
 tr52:
@@ -1683,63 +1695,63 @@ te = p+1
 //line machine.rl:71
 act = 29;
 	goto st48
-tr95:
+tr96:
 //line NONE:1
 te = p+1
 
 //line machine.rl:50
 act = 9;
 	goto st48
-tr98:
+tr99:
 //line NONE:1
 te = p+1
 
 //line machine.rl:51
 act = 10;
 	goto st48
-tr99:
+tr100:
 //line NONE:1
 te = p+1
 
 //line machine.rl:52
 act = 11;
 	goto st48
-tr106:
+tr107:
 //line NONE:1
 te = p+1
 
 //line machine.rl:54
 act = 13;
 	goto st48
-tr108:
+tr109:
 //line NONE:1
 te = p+1
 
 //line machine.rl:55
 act = 14;
 	goto st48
-tr109:
+tr110:
 //line NONE:1
 te = p+1
 
 //line machine.rl:56
 act = 15;
 	goto st48
-tr111:
+tr112:
 //line NONE:1
 te = p+1
 
 //line machine.rl:57
 act = 16;
 	goto st48
-tr114:
+tr115:
 //line NONE:1
 te = p+1
 
 //line machine.rl:58
 act = 17;
 	goto st48
-tr117:
+tr118:
 //line NONE:1
 te = p+1
 
@@ -1751,7 +1763,7 @@ act = 18;
 			goto _test_eof48
 		}
 	st_case_48:
-//line machine.go:1755
+//line machine.go:1760
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1872,7 +1884,7 @@ act = 18;
 		default:
 			goto st49
 		}
-		goto tr90
+		goto tr91
 tr55:
 //line NONE:1
 te = p+1
@@ -1885,49 +1897,7 @@ act = 29;
 			goto _test_eof50
 		}
 	st_case_50:
-//line machine.go:1889
-		switch data[p] {
-		case 39:
-			goto st42
-		case 43:
-			goto st13
-		case 46:
-			goto st13
-		case 47:
-			goto st5
-		case 58:
-			goto st14
-		case 95:
-			goto tr54
-		case 115:
-			goto tr91
-		}
-		switch {
-		case data[p] < 65:
-			if 45 <= data[p] && data[p] <= 57 {
-				goto tr52
-			}
-		case data[p] > 90:
-			if 97 <= data[p] && data[p] <= 122 {
-				goto tr52
-			}
-		default:
-			goto tr52
-		}
-		goto tr86
-tr91:
-//line NONE:1
-te = p+1
-
-//line machine.rl:71
-act = 29;
-	goto st51
-	st51:
-		if p++; p == pe {
-			goto _test_eof51
-		}
-	st_case_51:
-//line machine.go:1931
+//line machine.go:1894
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1963,13 +1933,13 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
-	goto st52
-	st52:
+	goto st51
+	st51:
 		if p++; p == pe {
-			goto _test_eof52
+			goto _test_eof51
 		}
-	st_case_52:
-//line machine.go:1973
+	st_case_51:
+//line machine.go:1936
 		switch data[p] {
 		case 39:
 			goto st42
@@ -1983,7 +1953,7 @@ act = 29;
 			goto st14
 		case 95:
 			goto tr54
-		case 101:
+		case 115:
 			goto tr93
 		}
 		switch {
@@ -2005,13 +1975,13 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
-	goto st53
-	st53:
+	goto st52
+	st52:
 		if p++; p == pe {
-			goto _test_eof53
+			goto _test_eof52
 		}
-	st_case_53:
-//line machine.go:2015
+	st_case_52:
+//line machine.go:1978
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2025,7 +1995,7 @@ act = 29;
 			goto st14
 		case 95:
 			goto tr54
-		case 114:
+		case 101:
 			goto tr94
 		}
 		switch {
@@ -2047,13 +2017,55 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
+	goto st53
+	st53:
+		if p++; p == pe {
+			goto _test_eof53
+		}
+	st_case_53:
+//line machine.go:2020
+		switch data[p] {
+		case 39:
+			goto st42
+		case 43:
+			goto st13
+		case 46:
+			goto st13
+		case 47:
+			goto st5
+		case 58:
+			goto st14
+		case 95:
+			goto tr54
+		case 114:
+			goto tr95
+		}
+		switch {
+		case data[p] < 65:
+			if 45 <= data[p] && data[p] <= 57 {
+				goto tr52
+			}
+		case data[p] > 90:
+			if 97 <= data[p] && data[p] <= 122 {
+				goto tr52
+			}
+		default:
+			goto tr52
+		}
+		goto tr86
+tr95:
+//line NONE:1
+te = p+1
+
+//line machine.rl:71
+act = 29;
 	goto st54
 	st54:
 		if p++; p == pe {
 			goto _test_eof54
 		}
 	st_case_54:
-//line machine.go:2057
+//line machine.go:2062
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2068,7 +2080,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 116:
-			goto tr95
+			goto tr96
 		}
 		switch {
 		case data[p] < 65:
@@ -2095,7 +2107,7 @@ act = 29;
 			goto _test_eof55
 		}
 	st_case_55:
-//line machine.go:2099
+//line machine.go:2104
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2110,48 +2122,6 @@ act = 29;
 		case 95:
 			goto tr54
 		case 108:
-			goto tr96
-		}
-		switch {
-		case data[p] < 65:
-			if 45 <= data[p] && data[p] <= 57 {
-				goto tr52
-			}
-		case data[p] > 90:
-			if 97 <= data[p] && data[p] <= 122 {
-				goto tr52
-			}
-		default:
-			goto tr52
-		}
-		goto tr86
-tr96:
-//line NONE:1
-te = p+1
-
-//line machine.rl:71
-act = 29;
-	goto st56
-	st56:
-		if p++; p == pe {
-			goto _test_eof56
-		}
-	st_case_56:
-//line machine.go:2141
-		switch data[p] {
-		case 39:
-			goto st42
-		case 43:
-			goto st13
-		case 46:
-			goto st13
-		case 47:
-			goto st5
-		case 58:
-			goto st14
-		case 95:
-			goto tr54
-		case 115:
 			goto tr97
 		}
 		switch {
@@ -2173,13 +2143,55 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
+	goto st56
+	st56:
+		if p++; p == pe {
+			goto _test_eof56
+		}
+	st_case_56:
+//line machine.go:2146
+		switch data[p] {
+		case 39:
+			goto st42
+		case 43:
+			goto st13
+		case 46:
+			goto st13
+		case 47:
+			goto st5
+		case 58:
+			goto st14
+		case 95:
+			goto tr54
+		case 115:
+			goto tr98
+		}
+		switch {
+		case data[p] < 65:
+			if 45 <= data[p] && data[p] <= 57 {
+				goto tr52
+			}
+		case data[p] > 90:
+			if 97 <= data[p] && data[p] <= 122 {
+				goto tr52
+			}
+		default:
+			goto tr52
+		}
+		goto tr86
+tr98:
+//line NONE:1
+te = p+1
+
+//line machine.rl:71
+act = 29;
 	goto st57
 	st57:
 		if p++; p == pe {
 			goto _test_eof57
 		}
 	st_case_57:
-//line machine.go:2183
+//line machine.go:2188
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2194,7 +2206,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 101:
-			goto tr98
+			goto tr99
 		}
 		switch {
 		case data[p] < 65:
@@ -2221,7 +2233,7 @@ act = 29;
 			goto _test_eof58
 		}
 	st_case_58:
-//line machine.go:2225
+//line machine.go:2230
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2236,9 +2248,9 @@ act = 29;
 		case 95:
 			goto tr54
 		case 102:
-			goto tr99
-		case 110:
 			goto tr100
+		case 110:
+			goto tr101
 		}
 		switch {
 		case data[p] < 65:
@@ -2253,7 +2265,7 @@ act = 29;
 			goto tr52
 		}
 		goto tr86
-tr100:
+tr101:
 //line NONE:1
 te = p+1
 
@@ -2265,7 +2277,7 @@ act = 12;
 			goto _test_eof59
 		}
 	st_case_59:
-//line machine.go:2269
+//line machine.go:2274
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2280,48 +2292,6 @@ act = 12;
 		case 95:
 			goto tr54
 		case 104:
-			goto tr102
-		}
-		switch {
-		case data[p] < 65:
-			if 45 <= data[p] && data[p] <= 57 {
-				goto tr52
-			}
-		case data[p] > 90:
-			if 97 <= data[p] && data[p] <= 122 {
-				goto tr52
-			}
-		default:
-			goto tr52
-		}
-		goto tr101
-tr102:
-//line NONE:1
-te = p+1
-
-//line machine.rl:71
-act = 29;
-	goto st60
-	st60:
-		if p++; p == pe {
-			goto _test_eof60
-		}
-	st_case_60:
-//line machine.go:2311
-		switch data[p] {
-		case 39:
-			goto st42
-		case 43:
-			goto st13
-		case 46:
-			goto st13
-		case 47:
-			goto st5
-		case 58:
-			goto st14
-		case 95:
-			goto tr54
-		case 101:
 			goto tr103
 		}
 		switch {
@@ -2336,20 +2306,20 @@ act = 29;
 		default:
 			goto tr52
 		}
-		goto tr86
+		goto tr102
 tr103:
 //line NONE:1
 te = p+1
 
 //line machine.rl:71
 act = 29;
-	goto st61
-	st61:
+	goto st60
+	st60:
 		if p++; p == pe {
-			goto _test_eof61
+			goto _test_eof60
 		}
-	st_case_61:
-//line machine.go:2353
+	st_case_60:
+//line machine.go:2316
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2363,7 +2333,7 @@ act = 29;
 			goto st14
 		case 95:
 			goto tr54
-		case 114:
+		case 101:
 			goto tr104
 		}
 		switch {
@@ -2385,13 +2355,13 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
-	goto st62
-	st62:
+	goto st61
+	st61:
 		if p++; p == pe {
-			goto _test_eof62
+			goto _test_eof61
 		}
-	st_case_62:
-//line machine.go:2395
+	st_case_61:
+//line machine.go:2358
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2405,7 +2375,7 @@ act = 29;
 			goto st14
 		case 95:
 			goto tr54
-		case 105:
+		case 114:
 			goto tr105
 		}
 		switch {
@@ -2427,13 +2397,55 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
+	goto st62
+	st62:
+		if p++; p == pe {
+			goto _test_eof62
+		}
+	st_case_62:
+//line machine.go:2400
+		switch data[p] {
+		case 39:
+			goto st42
+		case 43:
+			goto st13
+		case 46:
+			goto st13
+		case 47:
+			goto st5
+		case 58:
+			goto st14
+		case 95:
+			goto tr54
+		case 105:
+			goto tr106
+		}
+		switch {
+		case data[p] < 65:
+			if 45 <= data[p] && data[p] <= 57 {
+				goto tr52
+			}
+		case data[p] > 90:
+			if 97 <= data[p] && data[p] <= 122 {
+				goto tr52
+			}
+		default:
+			goto tr52
+		}
+		goto tr86
+tr106:
+//line NONE:1
+te = p+1
+
+//line machine.rl:71
+act = 29;
 	goto st63
 	st63:
 		if p++; p == pe {
 			goto _test_eof63
 		}
 	st_case_63:
-//line machine.go:2437
+//line machine.go:2442
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2448,7 +2460,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 116:
-			goto tr106
+			goto tr107
 		}
 		switch {
 		case data[p] < 65:
@@ -2475,7 +2487,7 @@ act = 29;
 			goto _test_eof64
 		}
 	st_case_64:
-//line machine.go:2479
+//line machine.go:2484
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2490,7 +2502,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 101:
-			goto tr107
+			goto tr108
 		}
 		switch {
 		case data[p] < 65:
@@ -2505,7 +2517,7 @@ act = 29;
 			goto tr52
 		}
 		goto tr86
-tr107:
+tr108:
 //line NONE:1
 te = p+1
 
@@ -2517,7 +2529,7 @@ act = 29;
 			goto _test_eof65
 		}
 	st_case_65:
-//line machine.go:2521
+//line machine.go:2526
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2532,7 +2544,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 116:
-			goto tr108
+			goto tr109
 		}
 		switch {
 		case data[p] < 65:
@@ -2559,7 +2571,7 @@ act = 29;
 			goto _test_eof66
 		}
 	st_case_66:
-//line machine.go:2563
+//line machine.go:2568
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2574,7 +2586,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 114:
-			goto tr109
+			goto tr110
 		}
 		switch {
 		case data[p] < 65:
@@ -2601,7 +2613,7 @@ act = 29;
 			goto _test_eof67
 		}
 	st_case_67:
-//line machine.go:2605
+//line machine.go:2610
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2616,7 +2628,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 101:
-			goto tr110
+			goto tr111
 		}
 		switch {
 		case data[p] < 65:
@@ -2631,7 +2643,7 @@ act = 29;
 			goto tr52
 		}
 		goto tr86
-tr110:
+tr111:
 //line NONE:1
 te = p+1
 
@@ -2643,7 +2655,7 @@ act = 29;
 			goto _test_eof68
 		}
 	st_case_68:
-//line machine.go:2647
+//line machine.go:2652
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2658,7 +2670,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 99:
-			goto tr111
+			goto tr112
 		}
 		switch {
 		case data[p] < 65:
@@ -2685,7 +2697,7 @@ act = 29;
 			goto _test_eof69
 		}
 	st_case_69:
-//line machine.go:2689
+//line machine.go:2694
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2700,48 +2712,6 @@ act = 29;
 		case 95:
 			goto tr54
 		case 104:
-			goto tr112
-		}
-		switch {
-		case data[p] < 65:
-			if 45 <= data[p] && data[p] <= 57 {
-				goto tr52
-			}
-		case data[p] > 90:
-			if 97 <= data[p] && data[p] <= 122 {
-				goto tr52
-			}
-		default:
-			goto tr52
-		}
-		goto tr86
-tr112:
-//line NONE:1
-te = p+1
-
-//line machine.rl:71
-act = 29;
-	goto st70
-	st70:
-		if p++; p == pe {
-			goto _test_eof70
-		}
-	st_case_70:
-//line machine.go:2731
-		switch data[p] {
-		case 39:
-			goto st42
-		case 43:
-			goto st13
-		case 46:
-			goto st13
-		case 47:
-			goto st5
-		case 58:
-			goto st14
-		case 95:
-			goto tr54
-		case 101:
 			goto tr113
 		}
 		switch {
@@ -2763,13 +2733,55 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
+	goto st70
+	st70:
+		if p++; p == pe {
+			goto _test_eof70
+		}
+	st_case_70:
+//line machine.go:2736
+		switch data[p] {
+		case 39:
+			goto st42
+		case 43:
+			goto st13
+		case 46:
+			goto st13
+		case 47:
+			goto st5
+		case 58:
+			goto st14
+		case 95:
+			goto tr54
+		case 101:
+			goto tr114
+		}
+		switch {
+		case data[p] < 65:
+			if 45 <= data[p] && data[p] <= 57 {
+				goto tr52
+			}
+		case data[p] > 90:
+			if 97 <= data[p] && data[p] <= 122 {
+				goto tr52
+			}
+		default:
+			goto tr52
+		}
+		goto tr86
+tr114:
+//line NONE:1
+te = p+1
+
+//line machine.rl:71
+act = 29;
 	goto st71
 	st71:
 		if p++; p == pe {
 			goto _test_eof71
 		}
 	st_case_71:
-//line machine.go:2773
+//line machine.go:2778
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2784,7 +2796,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 110:
-			goto tr114
+			goto tr115
 		}
 		switch {
 		case data[p] < 65:
@@ -2811,7 +2823,7 @@ act = 29;
 			goto _test_eof72
 		}
 	st_case_72:
-//line machine.go:2815
+//line machine.go:2820
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2826,48 +2838,6 @@ act = 29;
 		case 95:
 			goto tr54
 		case 105:
-			goto tr115
-		}
-		switch {
-		case data[p] < 65:
-			if 45 <= data[p] && data[p] <= 57 {
-				goto tr52
-			}
-		case data[p] > 90:
-			if 97 <= data[p] && data[p] <= 122 {
-				goto tr52
-			}
-		default:
-			goto tr52
-		}
-		goto tr86
-tr115:
-//line NONE:1
-te = p+1
-
-//line machine.rl:71
-act = 29;
-	goto st73
-	st73:
-		if p++; p == pe {
-			goto _test_eof73
-		}
-	st_case_73:
-//line machine.go:2857
-		switch data[p] {
-		case 39:
-			goto st42
-		case 43:
-			goto st13
-		case 46:
-			goto st13
-		case 47:
-			goto st5
-		case 58:
-			goto st14
-		case 95:
-			goto tr54
-		case 116:
 			goto tr116
 		}
 		switch {
@@ -2889,13 +2859,55 @@ te = p+1
 
 //line machine.rl:71
 act = 29;
+	goto st73
+	st73:
+		if p++; p == pe {
+			goto _test_eof73
+		}
+	st_case_73:
+//line machine.go:2862
+		switch data[p] {
+		case 39:
+			goto st42
+		case 43:
+			goto st13
+		case 46:
+			goto st13
+		case 47:
+			goto st5
+		case 58:
+			goto st14
+		case 95:
+			goto tr54
+		case 116:
+			goto tr117
+		}
+		switch {
+		case data[p] < 65:
+			if 45 <= data[p] && data[p] <= 57 {
+				goto tr52
+			}
+		case data[p] > 90:
+			if 97 <= data[p] && data[p] <= 122 {
+				goto tr52
+			}
+		default:
+			goto tr52
+		}
+		goto tr86
+tr117:
+//line NONE:1
+te = p+1
+
+//line machine.rl:71
+act = 29;
 	goto st74
 	st74:
 		if p++; p == pe {
 			goto _test_eof74
 		}
 	st_case_74:
-//line machine.go:2899
+//line machine.go:2904
 		switch data[p] {
 		case 39:
 			goto st42
@@ -2910,7 +2922,7 @@ act = 29;
 		case 95:
 			goto tr54
 		case 104:
-			goto tr117
+			goto tr118
 		}
 		switch {
 		case data[p] < 65:
@@ -2930,8 +2942,11 @@ act = 29;
 			goto _test_eof75
 		}
 	st_case_75:
-		if data[p] == 124 {
-			goto tr118
+		switch data[p] {
+		case 62:
+			goto tr119
+		case 124:
+			goto tr120
 		}
 		goto tr66
 tr65:
@@ -2944,7 +2959,7 @@ te = p+1
 			goto _test_eof76
 		}
 	st_case_76:
-//line machine.go:2948
+//line machine.go:2956
 		if data[p] == 47 {
 			goto st15
 		}
@@ -3003,7 +3018,7 @@ te = p+1
 		default:
 			goto st77
 		}
-		goto tr120
+		goto tr122
 	st78:
 		if p++; p == pe {
 			goto _test_eof78
@@ -3032,7 +3047,7 @@ te = p+1
 		default:
 			goto st77
 		}
-		goto tr120
+		goto tr122
 tr22:
 //line machine.rl:32
 p = (te) - 1
@@ -3049,24 +3064,24 @@ tr24:
 	}
 	
 	goto st79
-tr122:
+tr124:
 //line machine.rl:30
 te = p+1
 { if !tokleave('"') { return }; {top--; cs = stack[top];goto _again } }
 	goto st79
-tr125:
+tr127:
 //line machine.rl:32
 te = p
 p--
 { tok(text); addLines() }
 	goto st79
-tr127:
+tr129:
 //line machine.rl:33
 te = p
 p--
 { tok(text) }
 	goto st79
-tr128:
+tr130:
 //line machine.rl:31
 te = p+1
 { tokenter(interp, '}'); { if nostack() { return }; {stack[top] = 79; top++; goto st22 }} }
@@ -3085,10 +3100,10 @@ act = 0
 //line NONE:1
 ts = p
 
-//line machine.go:3089
+//line machine.go:3097
 		switch data[p] {
 		case 34:
-			goto tr122
+			goto tr124
 		case 36:
 			goto st81
 		case 92:
@@ -3107,10 +3122,10 @@ act = 3;
 			goto _test_eof80
 		}
 	st_case_80:
-//line machine.go:3111
+//line machine.go:3119
 		switch data[p] {
 		case 34:
-			goto tr125
+			goto tr127
 		case 36:
 			goto st16
 		case 92:
@@ -3142,9 +3157,9 @@ act = 3;
 	st_case_81:
 		switch data[p] {
 		case 34:
-			goto tr127
+			goto tr129
 		case 123:
-			goto tr128
+			goto tr130
 		}
 		goto tr23
 tr25:
@@ -3164,24 +3179,24 @@ tr29:
 	}
 	
 	goto st82
-tr131:
+tr133:
 //line machine.rl:42
 te = p
 p--
 { tok(text); addLines() }
 	goto st82
-tr134:
+tr136:
 //line machine.rl:43
 te = p
 p--
 { tok(text) }
 	goto st82
-tr135:
+tr137:
 //line machine.rl:41
 te = p+1
 { tokenter(interp, '}'); { if nostack() { return }; {stack[top] = 82; top++; goto st22 }} }
 	goto st82
-tr137:
+tr139:
 //line machine.rl:40
 te = p
 p--
@@ -3198,7 +3213,7 @@ ts = 0
 //line NONE:1
 ts = p
 
-//line machine.go:3202
+//line machine.go:3210
 		switch data[p] {
 		case 36:
 			goto st84
@@ -3218,7 +3233,7 @@ act = 7;
 			goto _test_eof83
 		}
 	st_case_83:
-//line machine.go:3222
+//line machine.go:3230
 		switch data[p] {
 		case 36:
 			goto st18
@@ -3277,9 +3292,9 @@ act = 7;
 	st_case_84:
 		switch data[p] {
 		case 39:
-			goto tr134
+			goto tr136
 		case 123:
-			goto tr135
+			goto tr137
 		}
 		goto tr26
 	st85:
@@ -3289,12 +3304,12 @@ act = 7;
 	st_case_85:
 		switch data[p] {
 		case 36:
-			goto tr134
-		case 39:
 			goto tr136
+		case 39:
+			goto tr138
 		}
 		goto tr26
-tr136:
+tr138:
 //line NONE:1
 te = p+1
 
@@ -3306,7 +3321,7 @@ act = 5;
 			goto _test_eof86
 		}
 	st_case_86:
-//line machine.go:3310
+//line machine.go:3318
 		switch data[p] {
 		case 36:
 			goto tr26
@@ -3315,7 +3330,7 @@ act = 5;
 		case 92:
 			goto st21
 		}
-		goto tr137
+		goto tr139
 st_case_0:
 	st0:
 		cs = 0
@@ -3492,7 +3507,7 @@ st_case_0:
 		case 14:
 			goto tr5
 		case 49:
-			goto tr90
+			goto tr91
 		case 50:
 			goto tr86
 		case 51:
@@ -3512,7 +3527,7 @@ st_case_0:
 		case 58:
 			goto tr86
 		case 59:
-			goto tr101
+			goto tr102
 		case 60:
 			goto tr86
 		case 61:
@@ -3550,19 +3565,19 @@ st_case_0:
 		case 15:
 			goto tr0
 		case 77:
-			goto tr120
+			goto tr122
 		case 78:
-			goto tr120
+			goto tr122
 		case 80:
-			goto tr125
+			goto tr127
 		case 16:
 			goto tr22
 		case 17:
 			goto tr24
 		case 81:
-			goto tr127
+			goto tr129
 		case 83:
-			goto tr131
+			goto tr133
 		case 18:
 			goto tr25
 		case 19:
@@ -3572,18 +3587,18 @@ st_case_0:
 		case 21:
 			goto tr29
 		case 84:
-			goto tr134
+			goto tr136
 		case 85:
-			goto tr134
+			goto tr136
 		case 86:
-			goto tr137
+			goto tr139
 		}
 	}
 
 	_out: {}
 	}
 
-//line machine.rl:170
+//line machine.rl:172
 
 	if p != eof {
 		err = r.Errorf("precedes the token that failed to lex")
