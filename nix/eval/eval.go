@@ -19,6 +19,18 @@ func (scope *Scope) Subscope(binds Set, lowPrio bool) *Scope {
 	return &Scope{Binds: binds, LowPrio: lowPrio, Parent: scope}
 }
 
+func (scope *Scope) Resolve(sym Sym) *Expression {
+	if x, exists := scope.Binds[sym]; exists {
+		return x
+	} else {
+		if scope.Parent == nil {
+			panic(fmt.Sprintln("variable of sym not found:", sym))
+		} else {
+			return scope.Parent.Resolve(sym)
+		}
+	}
+}
+
 type Expression struct {
 	Value  Value
 	Scope  *Scope
@@ -67,6 +79,8 @@ func (x *Expression) force() (val Value) {
 	switch nt {
 	default:
 		panic(fmt.Sprintln("unsupported node type:", n.Type))
+	case p.IDNode:
+		return x.Scope.Resolve(Intern(x.tokenString(0))).Eval()
 	case p.URINode:
 		return URI(x.tokenString(0))
 	case p.PathNode:
