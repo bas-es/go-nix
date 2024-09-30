@@ -8,11 +8,12 @@ node *Node
 }
 
 %type <node>
-Expression Interp String ID Atom Select Apply Op InterpID AttrPath List Binds InheritList Function ArgSet Arg
+Expression Interp String ID Atom Select Apply Op InterpID AttrPath List Binds
+InheritList Function ArgSet Arg
 
 %token <token>
 assert_ if_ then else_ let in with or_ rec inherit ellipsis interp space comment ii
-uri path float int_ id text argID argBracket
+uri path float int_ id text argID argBracket pipe_into pipe_from
 ':' '@' ',' ';' '"' '.' '(' ')' '[' ']' '{' '}' '='
 
 %nonassoc <token> impl
@@ -107,6 +108,10 @@ Apply
 : Select
 | Apply Select
 { $$ = p.NewNode(ApplyNode).N2($1, $2) }
+| Apply pipe_from Select
+{ $$ = p.NewNode(ApplyNode).N2($1, $3) }
+| Select pipe_into Apply
+{ $$ = p.NewNode(ApplyNode).N2($3, $1) }
 ;
 
 Op

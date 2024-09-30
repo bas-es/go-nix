@@ -80,6 +80,8 @@ ID       => { tok(id) };
 ">="  => { tok(geq) };
 "//"  => { tok(update) };
 "++"  => { tok(concat) };
+"|>"  => { tok(pipe_into) };
+"<|"  => { tok(pipe_from) };
 
 ["]  => { tokenter('"', '"'); fcall qstring; };
 "''" => { tokenter(ii, ii); fcall istring;  };
