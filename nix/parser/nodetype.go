@@ -36,6 +36,27 @@ const (
 	OpNode
 )
 
+const (
+	OpNegateNode   = OpNode + negate
+	OpQuestionNode = OpNode + '?'
+	OpConcatNode   = OpNode + concat
+	OpDivideNode   = OpNode + '/'
+	OpMultiplyNode = OpNode + '*'
+	OpReduceNode   = OpNode + '-'
+	OpAddNode      = OpNode + '+'
+	OpNotNode      = OpNode + '!'
+	OpUpdateNode   = OpNode + update
+	OpGeqNode      = OpNode + geq
+	OpLeqNode      = OpNode + leq
+	OpGreaterNode  = OpNode + '>'
+	OpLessNode     = OpNode + '<'
+	OpNeqNode      = OpNode + neq
+	OpEqNode       = OpNode + eq
+	OpAndNode      = OpNode + and
+	OpOrNode       = OpNode + or
+	OpImplNode     = OpNode + impl
+)
+
 var nodeName = map[NodeType]string{
 	ApplyNode:       "apply",
 	ArgNode:         "arg",
@@ -67,24 +88,24 @@ var nodeName = map[NodeType]string{
 	URINode:         "uri",
 	WithNode:        "with",
 
-	OpNode + negate: "-",
-	OpNode + '?':    "?",
-	OpNode + concat: "++",
-	OpNode + '/':    "/",
-	OpNode + '*':    "*",
-	OpNode + '-':    "-",
-	OpNode + '+':    "+",
-	OpNode + '!':    "!",
-	OpNode + update: "//",
-	OpNode + geq:    ">=",
-	OpNode + leq:    "<=",
-	OpNode + '>':    ">",
-	OpNode + '<':    "<",
-	OpNode + neq:    "!=",
-	OpNode + eq:     "==",
-	OpNode + and:    "&&",
-	OpNode + or:     "||",
-	OpNode + impl:   "->",
+	OpNegateNode:   "ne",
+	OpQuestionNode: "?",
+	OpConcatNode:   "++",
+	OpDivideNode:   "/",
+	OpMultiplyNode: "*",
+	OpReduceNode:   "-",
+	OpAddNode:      "+",
+	OpNotNode:      "!",
+	OpUpdateNode:   "//",
+	OpGeqNode:      ">=",
+	OpLeqNode:      "<=",
+	OpGreaterNode:  ">",
+	OpLessNode:     "<",
+	OpNeqNode:      "!=",
+	OpEqNode:       "==",
+	OpAndNode:      "&&",
+	OpOrNode:       "||",
+	OpImplNode:     "->",
 }
 
 func (nt NodeType) String() string {
