@@ -1,10 +1,9 @@
-package main
+package eval
 
 import (
 	"testing"
 
 	"github.com/alecthomas/assert"
-	"github.com/orivej/go-nix/nix/eval"
 	"github.com/orivej/go-nix/nix/parser"
 )
 
@@ -36,7 +35,7 @@ func TestEval(t *testing.T) {
 	} {
 		pr, err := parser.ParseString(test[0])
 		assert.NoError(t, err)
-		s := eval.ValueString(eval.ParseResult(pr))
+		s := ValueString(ParseResult(pr))
 		assert.Equal(t, test[1], s)
 	}
 }
