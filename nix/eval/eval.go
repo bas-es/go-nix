@@ -20,15 +20,23 @@ func (scope *Scope) Subscope(binds Set, lowPrio bool) *Scope {
 }
 
 func (scope *Scope) Resolve(sym Sym) *Expression {
-	if x, exists := scope.Binds[sym]; exists {
-		return x
-	} else {
-		if scope.Parent == nil {
-			panic(fmt.Sprintln("variable of sym not found:", sym))
-		} else {
-			return scope.Parent.Resolve(sym)
+	currentScope := scope
+	lowPrio := false
+	for {
+		if currentScope == nil {
+			if lowPrio {
+				break
+			} else {
+				currentScope = scope
+				lowPrio = true
+			}
 		}
+		if x, exists := currentScope.Binds[sym]; exists && currentScope.LowPrio == lowPrio {
+			return x
+		}
+		currentScope = currentScope.Parent
 	}
+	panic(fmt.Sprintln("variable of sym not found:", sym))
 }
 
 type Expression struct {
@@ -162,6 +170,14 @@ func (x *Expression) force() (val Value) {
 			or = x.WithNode(n.Nodes[2])
 		}
 		return x.WithNode(n.Nodes[0]).Select(attrpath, or).Eval()
+
+	case p.WithNode:
+		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(Set)
+		if !ok {
+			panic(fmt.Sprintln("argument of with is not a set:", attrs))
+		}
+		scope := x.Scope.Subscope(attrs, true)
+		return x.WithScoped(n.Nodes[1], scope).Eval()
 	}
 
 	return

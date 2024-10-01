@@ -22,6 +22,9 @@ func TestEval(t *testing.T) {
 		{`let a = 1; in { inherit a; }.a`, `1`},
 		{`let a.c = 1; in let inherit (a) c; in c`, `1`},
 		{`let a = 1; b = a; in b`, `1`},
+		{`with { a = 1; }; a`, `1`},
+		{`let a = 2; in with { a = 1; }; a`, `2`},
+		{`with { a = 2; }; with { a = 1; }; a`, `1`},
 	} {
 		pr, err := parser.ParseString(test[0])
 		assert.NoError(t, err)
