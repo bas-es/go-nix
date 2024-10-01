@@ -31,6 +31,8 @@ func TestEval(t *testing.T) {
 		{`({a,b,d?4,...}: d) { a = 1; b = 2; c = 3; }`, `4`},
 		{`(({a,b?3,...}@arg: arg) { a = 1; b = 2; c = 3; }).b`, `2`},
 		{`(({a,b?arg}@arg: b) { a = 2; }).a`, `2`},
+		{`(a: b: a: b) 1 2 3`, `2`},
+		{`(a: { a ? 2 }: a) 1 {}`, `2`},
 	} {
 		pr, err := parser.ParseString(test[0])
 		assert.NoError(t, err)

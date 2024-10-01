@@ -25,6 +25,7 @@ type Function struct {
 	HasFormal   bool
 	HasEllipsis bool
 	Body        *p.Node
+	Scope       *Scope
 }
 
 func (set Set) Bind1(sym Sym, x *Expression) {

@@ -203,6 +203,7 @@ func (x *Expression) force() (val Value) {
 				fn.HasArg = true
 			}
 		}
+		fn.Scope = x.Scope
 		return fn
 
 	case p.ApplyNode:
@@ -213,7 +214,9 @@ func (x *Expression) force() (val Value) {
 		arg := x.WithNode(n.Nodes[1])
 		var out *Expression
 		set := make(Set, 1)
-		scope := x.Scope.Subscope(set, false)
+		// TODO: Clearly explain why we need scope from function?
+		// Because body isn't converted to an expression?
+		scope := fn.Scope.Subscope(set, false)
 		// TODO: order wrong?
 		if fn.HasArg {
 			set[fn.Arg] = arg
@@ -223,7 +226,7 @@ func (x *Expression) force() (val Value) {
 			if !ok {
 				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
 			}
-			for sym, exprNode := range(fn.Formal) {
+			for sym, exprNode := range fn.Formal {
 				if fn.HasArg && sym == fn.Arg {
 					panic(fmt.Sprintln("duplicate formal function argument"))
 				}
@@ -231,7 +234,7 @@ func (x *Expression) force() (val Value) {
 					set[sym] = x.WithScoped(exprNode, scope)
 				}
 			}
-			for sym, expr := range(argSet) {
+			for sym, expr := range argSet {
 				if _, exists := fn.Formal[sym]; exists {
 					set[sym] = expr
 				} else if !fn.HasEllipsis {
