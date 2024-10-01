@@ -117,13 +117,19 @@ func (x *Expression) force() (val Value) {
 		}
 		return parts
 
-	case p.SetNode, p.RecSetNode:
-		set := make(Set, len(n.Nodes)) // Inheriting makes it larger than this.
+	case p.SetNode, p.RecSetNode, p.LetNode:
+		var bindNodes []*p.Node
+		if nt == p.LetNode {
+			bindNodes = n.Nodes[0].Nodes
+		} else {
+			bindNodes = n.Nodes
+		}
+		set := make(Set, len(bindNodes)) // Inheriting makes it larger than this.
 		scope := x.Scope
-		if nt == p.RecSetNode {
+		if nt == p.RecSetNode || nt == p.LetNode {
 			scope = scope.Subscope(set, false)
 		}
-		for _, c := range n.Nodes {
+		for _, c := range bindNodes {
 			switch c.Type {
 			case p.BindNode:
 				attrpath := x.WithScoped(c.Nodes[0], scope).evalAttrpath()
@@ -143,7 +149,11 @@ func (x *Expression) force() (val Value) {
 				}
 			}
 		}
-		return set
+		if nt == p.LetNode {
+			return x.WithScoped(n.Nodes[1], scope).Eval()
+		} else {
+			return set
+		}
 
 	case p.SelectNode, p.SelectOrNode:
 		attrpath := x.WithNode(n.Nodes[1]).evalAttrpath()
