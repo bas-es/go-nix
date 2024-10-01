@@ -178,6 +178,69 @@ func (x *Expression) force() (val Value) {
 		}
 		scope := x.Scope.Subscope(attrs, true)
 		return x.WithScoped(n.Nodes[1], scope).Eval()
+	case p.FunctionNode:
+		fn := new(Function)
+		for c, node := range n.Nodes {
+			if node.Type == p.ArgSetNode {
+				fn.Formal = make(FormalSet, len(node.Nodes))
+				fn.HasFormal = true
+				for _, arg := range node.Nodes {
+					if len(arg.Nodes) == 0 {
+						fn.HasEllipsis = true
+						continue
+					}
+					sym := Intern(x.WithNode(arg.Nodes[0]).tokenString(0))
+					var exprNode *p.Node
+					if len(arg.Nodes) == 2 {
+						exprNode = arg.Nodes[1]
+					}
+					fn.Formal[sym] = exprNode
+				}
+			} else if c >= 1 {
+				fn.Body = node
+			} else {
+				fn.Arg = Intern(x.WithNode(node).tokenString(0))
+				fn.HasArg = true
+			}
+		}
+		return fn
+
+	case p.ApplyNode:
+		fn, ok := x.WithNode(n.Nodes[0]).Eval().(*Function)
+		if !ok {
+			panic(fmt.Sprintln("attempt to call something which is not a function"))
+		}
+		arg := x.WithNode(n.Nodes[1])
+		var out *Expression
+		set := make(Set, 1)
+		scope := x.Scope.Subscope(set, false)
+		// TODO: order wrong?
+		if fn.HasArg {
+			set[fn.Arg] = arg
+		}
+		if fn.HasFormal {
+			argSet, ok := arg.Eval().(Set)
+			if !ok {
+				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
+			}
+			for sym, exprNode := range(fn.Formal) {
+				if fn.HasArg && sym == fn.Arg {
+					panic(fmt.Sprintln("duplicate formal function argument"))
+				}
+				if exprNode != nil {
+					set[sym] = x.WithScoped(exprNode, scope)
+				}
+			}
+			for sym, expr := range(argSet) {
+				if _, exists := fn.Formal[sym]; exists {
+					set[sym] = expr
+				} else if !fn.HasEllipsis {
+					panic(fmt.Sprintln("set has more than enough formals to call a function"))
+				}
+			}
+		}
+		out = x.WithScoped(fn.Body, scope)
+		return out.Eval()
 	}
 
 	return

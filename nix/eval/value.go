@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	p "github.com/orivej/go-nix/nix/parser"
 	"strconv"
 	"strings"
 )
@@ -13,6 +14,18 @@ type URI string
 type Path string
 type List []*Expression
 type Set map[Sym]*Expression
+
+type FormalSet map[Sym]*p.Node
+
+type Function struct {
+	// TODO: position
+	Arg         Sym
+	HasArg      bool
+	Formal      FormalSet
+	HasFormal   bool
+	HasEllipsis bool
+	Body        *p.Node
+}
 
 func (set Set) Bind1(sym Sym, x *Expression) {
 	if _, ok := set[sym]; ok {
@@ -67,6 +80,8 @@ func ValueString(val Value) string {
 			i++
 		}
 		return strings.Join(parts, " ")
+	case *Function:
+		return "<primop>"
 	default:
 		panic(fmt.Errorf("can not coerce %v to a string", val))
 	}
