@@ -5,8 +5,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/orivej/e"
-	"github.com/orivej/go-nix/nix/eval"
-	"github.com/orivej/go-nix/nix/parser"
+	"github.com/orivej/go-nix/pkg/eval"
+	"github.com/orivej/go-nix/pkg/parser"
 )
 
 var (

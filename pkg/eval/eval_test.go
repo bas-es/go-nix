@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
-	"github.com/orivej/go-nix/nix/parser"
+	"github.com/orivej/go-nix/pkg/parser"
 )
 
 func TestEval(t *testing.T) {
