@@ -6,9 +6,6 @@ import (
 	p "github.com/orivej/go-nix/pkg/parser"
 	"strconv"
 	"strings"
-
-	"github.com/orivej/e"
-	p "github.com/orivej/go-nix/nix/parser"
 )
 
 type Scope struct {
@@ -31,10 +28,13 @@ func (scope *Scope) Resolve(sym Sym) *Expression {
 			} else {
 				currentScope = scope
 				lowPrio = true
+				continue
 			}
 		}
-		if x, exists := currentScope.Binds[sym]; exists && currentScope.LowPrio == lowPrio {
-			return x
+		if currentScope.LowPrio == lowPrio {
+			if x, exists := currentScope.Binds[sym]; exists	{
+				return x
+			}
 		}
 		currentScope = currentScope.Parent
 	}
