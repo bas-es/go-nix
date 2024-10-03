@@ -98,7 +98,7 @@ func (x *Expression) resolve() {
 	default:
 		panic(fmt.Sprintln("unsupported node type:", n.Type))
 	case p.URINode:
-		x.Value = URI(x.tokenString(0))
+		x.Value = x.tokenString(0)
 	case p.PathNode:
 		// TODO: Absolute path/Flake related path
 		x.Value = Path(x.tokenString(0))

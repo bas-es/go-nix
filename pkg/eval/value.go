@@ -10,7 +10,6 @@ import (
 // Value is one of: int, float64, string, URI, Path, List, Set
 type Value interface{}
 
-type URI string
 type Path string
 type List []*Expression
 type Set map[Sym]*Expression
@@ -59,8 +58,6 @@ func ValueString(val Value) string {
 		return strconv.FormatFloat(v, 'g', -1, 64)
 	case string:
 		return v
-	case URI:
-		return string(v)
 	case Path:
 		return string(v)
 	case List:
@@ -92,8 +89,6 @@ func InterpString(val Value) string {
 	switch v := val.(type) {
 	case string:
 		return v
-	case URI:
-		return string(v)
 	case Path:
 		return string(v)
 	default:
