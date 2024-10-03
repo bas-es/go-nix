@@ -194,7 +194,23 @@ func (x *Expression) resolve() {
 		if nt == p.SelectOrNode {
 			or = x.WithNode(n.Nodes[2])
 		}
-		x.Lower = x.WithNode(n.Nodes[0]).Select(attrpath, or)
+		expr := x.WithNode(n.Nodes[0])
+		for _, sym := range attrpath {
+			val := expr.Eval()
+			if set, ok := val.(NixSet); ok {
+				if y, ok := set[sym]; ok {
+					expr = y
+				} else if or != nil {
+					expr = or
+					break
+				} else {
+					throw(fmt.Errorf("%v does not contain %v", y, sym))
+				}
+			} else {
+				throw(fmt.Errorf("%v is not a set", val))
+			}
+		}
+		x.Lower = expr
 
 	case p.WithNode:
 		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(NixSet)
@@ -283,24 +299,6 @@ func (x *Expression) resolve() {
 
 func (x *Expression) Select1(sym Sym) *Expression {
 	return x.Eval().(NixSet)[sym]
-}
-
-func (x *Expression) Select(syms []Sym, or *Expression) *Expression {
-	for _, sym := range syms {
-		val := x.Eval()
-		if set, ok := val.(NixSet); ok {
-			if y, ok := set[sym]; ok {
-				x = y
-			} else if or != nil {
-				return or
-			} else {
-				throw(fmt.Errorf("%v does not contain %v", y, sym))
-			}
-		} else {
-			throw(fmt.Errorf("%v is not a set", val))
-		}
-	}
-	return x
 }
 
 func (x *Expression) evalAttrpath() []Sym {
