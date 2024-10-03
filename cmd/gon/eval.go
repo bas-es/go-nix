@@ -17,5 +17,5 @@ var (
 var evalMain = register("eval", func() {
 	pr, err := parser.ParseString(*evalExprArg)
 	e.Exit(err)
-	fmt.Println(eval.ValueString(eval.ParseResult(pr)))
+	fmt.Println(eval.ParseResult(pr).ToString())
 })

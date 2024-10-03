@@ -35,7 +35,7 @@ func TestEval(t *testing.T) {
 	} {
 		pr, err := parser.ParseString(test[0])
 		assert.NoError(t, err)
-		s := ValueString(ParseResult(pr))
+		s := ParseResult(pr).ToString()
 		assert.Equal(t, test[1], s)
 	}
 }

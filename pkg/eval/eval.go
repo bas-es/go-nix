@@ -9,12 +9,12 @@ import (
 )
 
 type Scope struct {
-	Binds   Set
+	Binds   NixSet
 	LowPrio bool
 	Parent  *Scope
 }
 
-func (scope *Scope) Subscope(binds Set, lowPrio bool) *Scope {
+func (scope *Scope) Subscope(binds NixSet, lowPrio bool) *Scope {
 	return &Scope{Binds: binds, LowPrio: lowPrio, Parent: scope}
 }
 
@@ -42,7 +42,7 @@ func (scope *Scope) Resolve(sym Sym) *Expression {
 }
 
 type Expression struct {
-	Value  Value
+	Value  NixValue
 	Lower  *Expression
 	Scope  *Scope
 	Parser *p.Parser
@@ -50,8 +50,13 @@ type Expression struct {
 	Sym    Sym
 }
 
-func (x *Expression) String() string {
-	return ValueString(x.Value)
+// TODO: recursive :p logic should be here
+func (x *Expression) ToString() string {
+	if x.Value == nil {
+		return "..."
+	} else {
+		return x.Value.ToString()
+	}
 }
 
 func (x *Expression) WithNode(n *p.Node) *Expression {
@@ -67,7 +72,7 @@ func (x *Expression) WithScoped(n *p.Node, scope *Scope) *Expression {
 	return &y
 }
 
-func (x *Expression) Eval() Value {
+func (x *Expression) Eval() NixValue {
 	expr := x
 	for expr.Value == nil {
 		if expr.Lower != nil {
@@ -98,18 +103,18 @@ func (x *Expression) resolve() {
 	default:
 		panic(fmt.Sprintln("unsupported node type:", n.Type))
 	case p.URINode:
-		x.Value = x.tokenString(0)
+		x.Value = &NixString{Content: x.tokenString(0)}
 	case p.PathNode:
 		// TODO: Absolute path/Flake related path
-		x.Value = Path(x.tokenString(0))
+		x.Value = &NixPath{Root: "/", Path: x.tokenString(0)}
 	case p.FloatNode:
 		val, err := strconv.ParseFloat(x.tokenString(0), 64)
 		noerr(err)
-		x.Value = val
+		x.Value = NixFloat(val)
 	case p.IntNode:
-		val, err := strconv.Atoi(x.tokenString(0))
+		val, err := strconv.ParseInt(x.tokenString(0), 10, 64)
 		noerr(err)
-		x.Value = val
+		x.Value = NixInt(val)
 
 	case p.StringNode, p.IStringNode:
 		parts := make([]string, len(n.Nodes))
@@ -124,7 +129,8 @@ func (x *Expression) resolve() {
 				parts[i] = InterpString(y.Eval())
 			}
 		}
-		x.Value = strings.Join(parts, "")
+		// TODO: Add InterpNode to context
+		x.Value = &NixString{Content: strings.Join(parts, "")}
 
 	case p.IDNode:
 		x.Lower = x.Scope.Resolve(Intern(x.tokenString(0)))
@@ -133,7 +139,7 @@ func (x *Expression) resolve() {
 		x.Lower = x.WithNode(n.Nodes[0])
 
 	case p.ListNode:
-		parts := make(List, len(n.Nodes))
+		parts := make(NixList, len(n.Nodes))
 		for i, c := range n.Nodes {
 			parts[i] = x.WithNode(c)
 		}
@@ -146,7 +152,7 @@ func (x *Expression) resolve() {
 		} else {
 			bindNodes = n.Nodes
 		}
-		set := make(Set, len(bindNodes)) // Inheriting makes it larger than this.
+		set := make(NixSet, len(bindNodes)) // Inheriting makes it larger than this.
 		scope := x.Scope
 		if nt == p.RecSetNode || nt == p.LetNode {
 			scope = scope.Subscope(set, false)
@@ -191,7 +197,7 @@ func (x *Expression) resolve() {
 		x.Lower = x.WithNode(n.Nodes[0]).Select(attrpath, or)
 
 	case p.WithNode:
-		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(Set)
+		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(NixSet)
 		if !ok {
 			// TODO: printing attrs here is wrong
 			panic(fmt.Sprintln("argument of with is not a set:", attrs))
@@ -200,10 +206,10 @@ func (x *Expression) resolve() {
 		x.Lower = x.WithScoped(n.Nodes[1], scope)
 
 	case p.FunctionNode:
-		fn := new(Function)
+		fn := new(NixFunction)
 		for c, node := range n.Nodes {
 			if node.Type == p.ArgSetNode {
-				fn.Formal = make(FormalSet, len(node.Nodes))
+				fn.Formal = make(map[Sym]*p.Node, len(node.Nodes))
 				fn.HasFormal = true
 				for _, arg := range node.Nodes {
 					if len(arg.Nodes) == 0 {
@@ -228,7 +234,7 @@ func (x *Expression) resolve() {
 		x.Value = fn
 
 	case p.ApplyNode:
-		fn, ok := x.WithNode(n.Nodes[0]).Eval().(*Function)
+		fn, ok := x.WithNode(n.Nodes[0]).Eval().(*NixFunction)
 		if !ok {
 			panic(fmt.Sprintln("attempt to call something which is not a function"))
 		}
@@ -236,7 +242,7 @@ func (x *Expression) resolve() {
 		// `(a: 1) a` should not success
 		arg.resolve()
 		var out *Expression
-		set := make(Set, 1)
+		set := make(NixSet, 1)
 		// TODO: Clearly explain why we need scope from function?
 		// Because body isn't converted to an expression?
 		scope := fn.Scope.Subscope(set, false)
@@ -245,7 +251,7 @@ func (x *Expression) resolve() {
 			set[fn.Arg] = arg
 		}
 		if fn.HasFormal {
-			argSet, ok := arg.Eval().(Set)
+			argSet, ok := arg.Eval().(NixSet)
 			if !ok {
 				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
 			}
@@ -267,19 +273,22 @@ func (x *Expression) resolve() {
 		}
 		out = x.WithScoped(fn.Body, scope)
 		x.Lower = out
+
+	case p.OpAddNode:
+
 	}
 
 	return
 }
 
 func (x *Expression) Select1(sym Sym) *Expression {
-	return x.Eval().(Set)[sym]
+	return x.Eval().(NixSet)[sym]
 }
 
 func (x *Expression) Select(syms []Sym, or *Expression) *Expression {
 	for _, sym := range syms {
 		val := x.Eval()
-		if set, ok := val.(Set); ok {
+		if set, ok := val.(NixSet); ok {
 			if y, ok := set[sym]; ok {
 				x = y
 			} else if or != nil {
@@ -317,7 +326,7 @@ func (x *Expression) attrString() string {
 	case p.IDNode:
 		return x.tokenString(0)
 	case p.StringNode:
-		return x.Eval().(string)
+		return x.Eval().(*NixString).Content
 	case p.InterpNode:
 		return InterpString(x.WithNode(x.Node.Nodes[0]).Eval())
 	default:
@@ -325,7 +334,7 @@ func (x *Expression) attrString() string {
 	}
 }
 
-func ParseResult(pr *p.Parser) Value {
+func ParseResult(pr *p.Parser) NixValue {
 	x := Expression{Parser: pr, Node: pr.Result}
 	return x.Eval()
 }
