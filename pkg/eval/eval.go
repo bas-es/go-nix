@@ -32,7 +32,7 @@ func (scope *Scope) Resolve(sym Sym) *Expression {
 			}
 		}
 		if currentScope.LowPrio == lowPrio {
-			if x, exists := currentScope.Binds[sym]; exists	{
+			if x, exists := currentScope.Binds[sym]; exists {
 				return x
 			}
 		}
@@ -85,6 +85,9 @@ func (x *Expression) tokenString(i int) string {
 }
 
 func (x *Expression) resolve() {
+	if x.Value != nil || x.Lower != nil {
+		return
+	}
 	pr := x.Parser
 	n := x.Node
 	nt := x.Node.Type
@@ -156,6 +159,8 @@ func (x *Expression) resolve() {
 			case p.InheritNode:
 				for _, interpid := range c.Nodes[0].Nodes {
 					y := x.WithNode(interpid)
+					// 'let inherit b; in 1' should not success
+					y.resolve()
 					y.Sym = Intern(y.attrString())
 					set.Bind1(y.Sym, y)
 				}
@@ -163,6 +168,9 @@ func (x *Expression) resolve() {
 				// This is not as lazy as it can be.
 				from := x.WithScoped(c.Nodes[0], scope)
 				for _, interpid := range c.Nodes[1].Nodes {
+					// let c = { a = 1; }; in let inherit (c) b; in 1
+					// should not success in sense, but nix does success
+					// so we don't complain about it
 					sym := Intern(x.WithNode(interpid).attrString())
 					set.Bind1(sym, from.Select1(sym))
 				}
@@ -224,10 +232,9 @@ func (x *Expression) resolve() {
 		if !ok {
 			panic(fmt.Sprintln("attempt to call something which is not a function"))
 		}
-		// `(a: 1) a` should not success
-		// This may need some rewrite. e.g. Expr --eval-> Expr
-		// arg := x.WithNode(n.Nodes[1]).resolve().Lower
 		arg := x.WithNode(n.Nodes[1])
+		// `(a: 1) a` should not success
+		arg.resolve()
 		var out *Expression
 		set := make(Set, 1)
 		// TODO: Clearly explain why we need scope from function?
