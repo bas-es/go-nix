@@ -2,7 +2,7 @@ package eval
 
 import (
 	"fmt"
-	p "github.com/orivej/go-nix/nix/parser"
+	p "github.com/orivej/go-nix/pkg/parser"
 	"strconv"
 	"strings"
 )
