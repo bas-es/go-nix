@@ -82,7 +82,7 @@ func ValueString(val Value) string {
 		}
 		return strings.Join(parts, " ")
 	case *Function:
-		return "<primop>"
+		return "«lambda»"
 	default:
 		panic(fmt.Errorf("can not coerce %v to a string", val))
 	}

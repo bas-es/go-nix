@@ -43,6 +43,7 @@ func (scope *Scope) Resolve(sym Sym) *Expression {
 
 type Expression struct {
 	Value  Value
+	Lower  *Expression
 	Scope  *Scope
 	Parser *p.Parser
 	Node   *p.Node
@@ -67,19 +68,23 @@ func (x *Expression) WithScoped(n *p.Node, scope *Scope) *Expression {
 }
 
 func (x *Expression) Eval() Value {
-	if x.Value == nil {
-		x.Value = x.force()
-		x.Scope = nil
+	expr := x
+	for expr.Value == nil {
+		if expr.Lower != nil {
+			expr = expr.Lower
+			// lower may already have value?
+		} else {
+			expr.resolve()
+		}
 	}
-	return x.Value
+	return expr.Value
 }
 
 func (x *Expression) tokenString(i int) string {
 	return x.Parser.TokenString(x.Node.Tokens[i])
 }
 
-func (x *Expression) force() (val Value) {
-	var err error
+func (x *Expression) resolve() {
 	pr := x.Parser
 	n := x.Node
 	nt := x.Node.Type
@@ -89,18 +94,19 @@ func (x *Expression) force() (val Value) {
 	switch nt {
 	default:
 		panic(fmt.Sprintln("unsupported node type:", n.Type))
-	case p.IDNode:
-		return x.Scope.Resolve(Intern(x.tokenString(0))).Eval()
 	case p.URINode:
-		return URI(x.tokenString(0))
+		x.Value = URI(x.tokenString(0))
 	case p.PathNode:
-		return Path(x.tokenString(0))
+		// TODO: Absolute path/Flake related path
+		x.Value = Path(x.tokenString(0))
 	case p.FloatNode:
-		val, err = strconv.ParseFloat(x.tokenString(0), 64)
+		val, err := strconv.ParseFloat(x.tokenString(0), 64)
 		noerr(err)
+		x.Value = val
 	case p.IntNode:
-		val, err = strconv.Atoi(x.tokenString(0))
+		val, err := strconv.Atoi(x.tokenString(0))
 		noerr(err)
+		x.Value = val
 
 	case p.StringNode, p.IStringNode:
 		parts := make([]string, len(n.Nodes))
@@ -115,17 +121,20 @@ func (x *Expression) force() (val Value) {
 				parts[i] = InterpString(y.Eval())
 			}
 		}
-		return strings.Join(parts, "")
+		x.Value = strings.Join(parts, "")
+
+	case p.IDNode:
+		x.Lower = x.Scope.Resolve(Intern(x.tokenString(0)))
 
 	case p.ParensNode:
-		return x.WithNode(n.Nodes[0]).Eval()
+		x.Lower = x.WithNode(n.Nodes[0])
 
 	case p.ListNode:
 		parts := make(List, len(n.Nodes))
 		for i, c := range n.Nodes {
 			parts[i] = x.WithNode(c)
 		}
-		return parts
+		x.Value = parts
 
 	case p.SetNode, p.RecSetNode, p.LetNode:
 		var bindNodes []*p.Node
@@ -160,9 +169,9 @@ func (x *Expression) force() (val Value) {
 			}
 		}
 		if nt == p.LetNode {
-			return x.WithScoped(n.Nodes[1], scope).Eval()
+			x.Lower = x.WithScoped(n.Nodes[1], scope)
 		} else {
-			return set
+			x.Value = set
 		}
 
 	case p.SelectNode, p.SelectOrNode:
@@ -171,15 +180,17 @@ func (x *Expression) force() (val Value) {
 		if nt == p.SelectOrNode {
 			or = x.WithNode(n.Nodes[2])
 		}
-		return x.WithNode(n.Nodes[0]).Select(attrpath, or).Eval()
+		x.Lower = x.WithNode(n.Nodes[0]).Select(attrpath, or)
 
 	case p.WithNode:
 		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(Set)
 		if !ok {
+			// TODO: printing attrs here is wrong
 			panic(fmt.Sprintln("argument of with is not a set:", attrs))
 		}
 		scope := x.Scope.Subscope(attrs, true)
-		return x.WithScoped(n.Nodes[1], scope).Eval()
+		x.Lower = x.WithScoped(n.Nodes[1], scope)
+
 	case p.FunctionNode:
 		fn := new(Function)
 		for c, node := range n.Nodes {
@@ -206,13 +217,16 @@ func (x *Expression) force() (val Value) {
 			}
 		}
 		fn.Scope = x.Scope
-		return fn
+		x.Value = fn
 
 	case p.ApplyNode:
 		fn, ok := x.WithNode(n.Nodes[0]).Eval().(*Function)
 		if !ok {
 			panic(fmt.Sprintln("attempt to call something which is not a function"))
 		}
+		// `(a: 1) a` should not success
+		// This may need some rewrite. e.g. Expr --eval-> Expr
+		// arg := x.WithNode(n.Nodes[1]).resolve().Lower
 		arg := x.WithNode(n.Nodes[1])
 		var out *Expression
 		set := make(Set, 1)
@@ -245,7 +259,7 @@ func (x *Expression) force() (val Value) {
 			}
 		}
 		out = x.WithScoped(fn.Body, scope)
-		return out.Eval()
+		x.Lower = out
 	}
 
 	return
