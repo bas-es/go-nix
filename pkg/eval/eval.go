@@ -341,11 +341,15 @@ func (x *Expression) resolve() {
 		num2 := x.WithNode(n.Nodes[1]).Eval()
 		x.Value = Calculate(num1, num2, nt)
 
-	case p.OpEqNode:
+	case p.OpEqNode, p.OpNeqNode:
 		val1 := x.WithNode(n.Nodes[0]).Eval()
 		val2 := x.WithNode(n.Nodes[1]).Eval()
-		x.Value = NixBool(val1.Compare(val2))
-
+		result := val1.Compare(val2)
+		if nt == p.OpEqNode {
+			x.Value = NixBool(result)
+		} else {
+			x.Value = NixBool(!result)
+		}
 	}
 
 	return
