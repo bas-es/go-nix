@@ -290,8 +290,10 @@ func (x *Expression) resolve() {
 		out = x.WithScoped(fn.Body, scope)
 		x.Lower = out
 
-	case p.OpAddNode:
-
+	case p.OpAddNode, p.OpReduceNode, p.OpMultiplyNode, p.OpDivideNode, p.OpGreaterNode, p.OpLessNode, p.OpGeqNode, p.OpLeqNode, p.OpEqNode:
+		num1 := x.WithNode(n.Nodes[0]).Eval()
+		num2 := x.WithNode(n.Nodes[1]).Eval()
+		x.Value = Calculate(num1, num2, nt)
 	}
 
 	return
