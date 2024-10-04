@@ -11,6 +11,7 @@ import (
 
 type NixValue interface {
 	ToString() string
+	Compare(val NixValue) bool
 }
 
 type NixInt int64
@@ -19,10 +20,30 @@ func (i NixInt) ToString() string {
 	return fmt.Sprintf("%d", i)
 }
 
+func (i NixInt) Compare(val NixValue) bool {
+	if i_, ok := val.(NixInt); ok {
+		return i == i_
+	} else if f_, ok := val.(NixFloat); ok {
+		return NixFloat(i).Compare(f_)
+	} else {
+		return false
+	}
+}
+
 type NixFloat float64
 
 func (f NixFloat) ToString() string {
 	return fmt.Sprintf("%.6g", f)
+}
+
+func (f NixFloat) Compare(val NixValue) bool {
+	if f_, ok := val.(NixFloat); ok {
+		return f.ToString() == f_.ToString()
+	} else if i_, ok := val.(NixInt); ok {
+		return NixFloat(i_).Compare(f)
+	} else {
+		return false
+	}
 }
 
 type NixBool bool
@@ -35,11 +56,27 @@ func (b NixBool) ToString() string {
 	}
 }
 
+func (b NixBool) Compare(val NixValue) bool {
+	if b_, ok := val.(NixBool); ok {
+		return b == b_
+	} else {
+		return false
+	}
+}
+
 // differentiate from the default nil
 type NixNull struct{}
 
 func (n *NixNull) ToString() string {
 	return "null"
+}
+
+func (n *NixNull) Compare(val NixValue) bool {
+	if _, ok := val.(*NixNull); ok {
+		return true
+	} else {
+		return false
+	}
 }
 
 type NixList []*Expression
@@ -57,6 +94,22 @@ func (list NixList) Concat(newList NixList) NixList {
 	return append(list, newList...)
 }
 
+func (l NixList) Compare(val NixValue) bool {
+	if l_, ok := val.(NixList); ok {
+		if len(l) != len(l_) {
+			return false
+		}
+		for i, v := range l {
+			if !l_[i].Eval().Compare(v.Eval()) {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
+}
+
 type NixSet map[Sym]*Expression
 
 func (s NixSet) ToString() string {
@@ -70,12 +123,14 @@ func (s NixSet) ToString() string {
 	}
 	return strings.Join(parts, " ")
 }
+
 func (set NixSet) Bind1(sym Sym, x *Expression) {
 	if _, ok := set[sym]; ok {
 		throw(fmt.Errorf("%v is already defined", sym))
 	}
 	set[sym] = x
 }
+
 func (set NixSet) Bind(syms []Sym, x *Expression) {
 	last := len(syms) - 1
 	for _, sym := range syms[:last] {
@@ -89,6 +144,7 @@ func (set NixSet) Bind(syms []Sym, x *Expression) {
 	}
 	set.Bind1(syms[last], x)
 }
+
 func (set NixSet) Update(newSet NixSet) NixSet {
 	result := make(NixSet, len(set))
 	for sym, expr := range set {
@@ -100,6 +156,22 @@ func (set NixSet) Update(newSet NixSet) NixSet {
 	return result
 }
 
+func (s NixSet) Compare(val NixValue) bool {
+	if s_, ok := val.(NixSet); ok {
+		if len(s) != len(s_) {
+			return false
+		}
+		for i, v := range s {
+			if !s_[i].Eval().Compare(v.Eval()) {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
+}
+
 type NixPath struct {
 	Root string
 	Path string
@@ -107,6 +179,14 @@ type NixPath struct {
 
 func (p *NixPath) ToString() string {
 	return path.Join(p.Root, p.Path)
+}
+
+func (p *NixPath) Compare(val NixValue) bool {
+	if p_, ok := val.(*NixPath); ok {
+		return p.ToString() == p_.ToString()
+	} else {
+		return false
+	}
 }
 
 type NixString struct {
@@ -123,6 +203,26 @@ func (str *NixString) ToString() string {
 	return str.Content
 }
 
+func (str *NixString) Concat(newStr *NixString) *NixString {
+	impurities := make(map[string]string, len(str.Impurities))
+	for name, reason := range str.Impurities {
+		impurities[name] = reason
+	}
+	for name, reason := range newStr.Impurities {
+		impurities[name] = reason
+	}
+	context := append(str.Context, newStr.Context...)
+	return &NixString{Content: str.Content + newStr.Content, Context: context, Impurities: impurities}
+}
+
+func (str *NixString) Compare(val NixValue) bool {
+	if str_, ok := val.(*NixString); ok {
+		return str.Content == str_.Content
+	} else {
+		return false
+	}
+}
+
 type NixFunction struct {
 	// TODO: position
 	Arg         Sym
@@ -136,6 +236,10 @@ type NixFunction struct {
 
 func (f *NixFunction) ToString() string {
 	return "«lambda»"
+}
+
+func (f *NixFunction) Compare(val NixValue) bool {
+	return false
 }
 
 func InterpString(val NixValue) string {

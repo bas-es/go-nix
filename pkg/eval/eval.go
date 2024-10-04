@@ -302,10 +302,49 @@ func (x *Expression) resolve() {
 		out = x.WithScoped(fn.Body, scope)
 		x.Lower = out
 
-	case p.OpAddNode, p.OpReduceNode, p.OpMultiplyNode, p.OpDivideNode, p.OpGreaterNode, p.OpLessNode, p.OpGeqNode, p.OpLeqNode, p.OpEqNode:
+	case p.OpAddNode:
+		add1 := x.WithNode(n.Nodes[0]).Eval()
+		add2 := x.WithNode(n.Nodes[1]).Eval()
+		if str1, ok := add1.(*NixString); ok {
+			if str2, ok := add2.(*NixString); ok {
+				x.Value = str1.Concat(str2)
+				return
+			}
+		}
+		x.Value = Calculate(add1, add2, p.OpAddNode)
+
+	case p.OpConcatNode:
+		add1 := x.WithNode(n.Nodes[0]).Eval()
+		add2 := x.WithNode(n.Nodes[1]).Eval()
+		if list1, ok := add1.(NixList); ok {
+			if list2, ok := add2.(NixList); ok {
+				x.Value = list1.Concat(list2)
+				return
+			}
+		}
+		panic(fmt.Sprintln("cannot concat two values in one or two of which is not list"))
+
+	case p.OpUpdateNode:
+		add1 := x.WithNode(n.Nodes[0]).Eval()
+		add2 := x.WithNode(n.Nodes[1]).Eval()
+		if set1, ok := add1.(NixSet); ok {
+			if set2, ok := add2.(NixSet); ok {
+				x.Value = set1.Update(set2)
+				return
+			}
+		}
+		panic(fmt.Sprintln("cannot update two values in one or two of which is not set"))
+
+	case p.OpReduceNode, p.OpMultiplyNode, p.OpDivideNode, p.OpGreaterNode, p.OpLessNode, p.OpGeqNode, p.OpLeqNode:
 		num1 := x.WithNode(n.Nodes[0]).Eval()
 		num2 := x.WithNode(n.Nodes[1]).Eval()
 		x.Value = Calculate(num1, num2, nt)
+
+	case p.OpEqNode:
+		val1 := x.WithNode(n.Nodes[0]).Eval()
+		val2 := x.WithNode(n.Nodes[1]).Eval()
+		x.Value = NixBool(val1.Compare(val2))
+
 	}
 
 	return
