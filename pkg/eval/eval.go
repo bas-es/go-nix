@@ -18,29 +18,6 @@ func (scope *Scope) Subscope(binds NixSet, lowPrio bool) *Scope {
 	return &Scope{Binds: binds, LowPrio: lowPrio, Parent: scope}
 }
 
-func (scope *Scope) Resolve(sym Sym) *Expression {
-	currentScope := scope
-	lowPrio := false
-	for {
-		if currentScope == nil {
-			if lowPrio {
-				break
-			} else {
-				currentScope = scope
-				lowPrio = true
-				continue
-			}
-		}
-		if currentScope.LowPrio == lowPrio {
-			if x, exists := currentScope.Binds[sym]; exists {
-				return x
-			}
-		}
-		currentScope = currentScope.Parent
-	}
-	panic(fmt.Sprintln("variable of sym not found:", sym))
-}
-
 type Expression struct {
 	Value  NixValue
 	Lower  *Expression
@@ -133,7 +110,31 @@ func (x *Expression) resolve() {
 		x.Value = &NixString{Content: strings.Join(parts, "")}
 
 	case p.IDNode:
-		x.Lower = x.Scope.Resolve(Intern(x.tokenString(0)))
+		currentScope := x.Scope
+		sym := Intern(x.tokenString(0))
+		lowPrio := false
+		for {
+			if currentScope == nil {
+				if lowPrio {
+					panic(fmt.Sprintln("variable of sym not found:", sym))
+				} else {
+					currentScope = x.Scope
+					lowPrio = true
+					continue
+				}
+			}
+			if currentScope.LowPrio == lowPrio {
+				if y, exists := currentScope.Binds[sym]; exists {
+					if y == x {
+						panic(fmt.Sprintln("infinite recursion encountered"))
+					} else {
+						x.Lower = y
+						break
+					}
+				}
+			}
+			currentScope = currentScope.Parent
+		}
 
 	case p.ParensNode:
 		x.Lower = x.WithNode(n.Nodes[0])
