@@ -1,1 +1,4 @@
-y.output
+/pkg/parser/y.output
+/pkg/parser/y.go
+/pkg/parser/machine.go
+/gon
