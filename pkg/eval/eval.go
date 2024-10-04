@@ -221,6 +221,18 @@ func (x *Expression) resolve() {
 		scope := x.Scope.Subscope(attrs, true)
 		x.Lower = x.WithScoped(n.Nodes[1], scope)
 
+	case p.IfNode:
+		cond, ok := x.WithNode(n.Nodes[0]).Eval().(NixBool)
+		if !ok {
+			// TODO: printing attrs here is wrong
+			panic(fmt.Sprintln("if condition does not evaluate to a boolean value"))
+		}
+		if cond {
+			x.Lower = x.WithNode(n.Nodes[1])
+		} else {
+			x.Lower = x.WithNode(n.Nodes[2])
+		}
+
 	case p.FunctionNode:
 		fn := new(NixFunction)
 		for c, node := range n.Nodes {
