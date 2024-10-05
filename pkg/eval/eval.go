@@ -50,6 +50,9 @@ func (x *Expression) WithScoped(n *p.Node, scope *Scope) *Expression {
 }
 
 func (x *Expression) Eval() NixValue {
+	// TODO: evaluating undefined identifier may succeeded if
+	// It's not needed for result. Is this ideal?
+	// e.g. `let a = b; in 1`, `rec { a = b; }`
 	expr := x
 	for expr.Value == nil {
 		if expr.Lower != nil {
@@ -166,8 +169,6 @@ func (x *Expression) resolve() {
 			case p.InheritNode:
 				for _, interpid := range c.Nodes[0].Nodes {
 					y := x.WithNode(interpid)
-					// 'let inherit b; in 1' should not success
-					y.resolve()
 					y.Sym = Intern(y.attrString())
 					set.Bind1(y.Sym, y)
 				}
@@ -268,8 +269,6 @@ func (x *Expression) resolve() {
 			panic(fmt.Sprintln("attempt to call something which is not a function"))
 		}
 		arg := x.WithNode(n.Nodes[1])
-		// `(a: 1) a` should not success
-		arg.resolve()
 		var out *Expression
 		set := make(NixSet, 1)
 		// TODO: Clearly explain why we need scope from function?
