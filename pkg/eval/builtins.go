@@ -15,6 +15,7 @@ var BuiltinsExposed = map[string]NixValue{
 	"false":          NixBool(false),
 	"null":           &NixNull{},
 	"throw":          &NixPrimop{Func: bThrow, ArgNum: 1},
+	"toString":       &NixPrimop{Func: bToString, ArgNum: 1},
 	"true":           NixBool(true),
 }
 
@@ -28,6 +29,7 @@ var BuiltinsInSet = map[string]NixValue{
 	"null":         &NixNull{},
 	"tail":         &NixPrimop{Func: bTail, ArgNum: 1},
 	"throw":        &NixPrimop{Func: bThrow, ArgNum: 1},
+	"toString":     &NixPrimop{Func: bToString, ArgNum: 1},
 	"true":         NixBool(true),
 }
 
@@ -126,6 +128,14 @@ func bTail(args ...*Expression) NixValue {
 		panic("argument of builtins.tail is not a list")
 	}
 	return l[1:]
+}
+
+func bToString(args ...*Expression) NixValue {
+	expr, ok := args[0].Eval().(NixValueWithToString)
+	if !ok {
+		panic("cannot coerce to string")
+	}
+	return &NixString{Content: expr.ToString()}
 }
 
 func bThrow(args ...*Expression) NixValue {

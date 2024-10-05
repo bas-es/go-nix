@@ -10,11 +10,20 @@ import (
 )
 
 type NixValue interface {
-	ToString() string
+	Print(recurse bool) string
 	Compare(val NixValue) bool
 }
 
+type NixValueWithToString interface {
+	NixValue
+	ToString() string
+}
+
 type NixInt int64
+
+func (i NixInt) Print(recurse bool) string {
+	return fmt.Sprintf("%d", i)
+}
 
 func (i NixInt) ToString() string {
 	return fmt.Sprintf("%d", i)
@@ -32,8 +41,12 @@ func (i NixInt) Compare(val NixValue) bool {
 
 type NixFloat float64
 
-func (f NixFloat) ToString() string {
+func (f NixFloat) Print(recurse bool) string {
 	return fmt.Sprintf("%.6g", f)
+}
+
+func (f NixFloat) ToString() string {
+	return fmt.Sprintf("%.6f", f)
 }
 
 func (f NixFloat) Compare(val NixValue) bool {
@@ -48,11 +61,19 @@ func (f NixFloat) Compare(val NixValue) bool {
 
 type NixBool bool
 
-func (b NixBool) ToString() string {
+func (b NixBool) Print(recurse bool) string {
 	if b {
 		return "true"
 	} else {
 		return "false"
+	}
+}
+
+func (b NixBool) ToString() string {
+	if b {
+		return "1"
+	} else {
+		return ""
 	}
 }
 
@@ -67,8 +88,12 @@ func (b NixBool) Compare(val NixValue) bool {
 // differentiate from the default nil
 type NixNull struct{}
 
-func (n *NixNull) ToString() string {
+func (n *NixNull) Print(recurse bool) string {
 	return "null"
+}
+
+func (n *NixNull) ToString() string {
+	return ""
 }
 
 func (n *NixNull) Compare(val NixValue) bool {
@@ -81,15 +106,32 @@ func (n *NixNull) Compare(val NixValue) bool {
 
 type NixList []*Expression
 
-func (l NixList) ToString() string {
+func (l NixList) Print(recurse bool) string {
 	last := len(l) + 1
 	parts := make([]string, last+1)
 	parts[0], parts[last] = "[", "]"
 	for i, x := range l {
-		parts[i+1] = x.ToString()
+		parts[i+1] = x.Print()
 	}
 	return strings.Join(parts, " ")
 }
+
+func (l NixList) ToString() string {
+	var result string
+	for n, elem := range l {
+		ts, ok := elem.Eval().(NixValueWithToString)
+		if !ok {
+			panic("cannot convert list element to string")
+		}
+		if n == 0 {
+			result = ts.ToString()
+		} else {
+			result += " " + ts.ToString()
+		}
+	}
+	return result
+}
+
 func (list NixList) Concat(newList NixList) NixList {
 	return append(list, newList...)
 }
@@ -112,16 +154,30 @@ func (l NixList) Compare(val NixValue) bool {
 
 type NixSet map[Sym]*Expression
 
-func (s NixSet) ToString() string {
+func (s NixSet) Print(recurse bool) string {
 	last := len(s) + 1
 	parts := make([]string, last+1)
 	parts[0], parts[last] = "{", "}"
 	i := 1
 	for sym, x := range s {
-		parts[i] = fmt.Sprintf("%s = %s;", sym, x.ToString())
+		parts[i] = fmt.Sprintf("%s = %s;", sym, x.Print())
 		i++
 	}
 	return strings.Join(parts, " ")
+}
+
+func (s NixSet) ToString() string {
+	if toFuncExpr, exists := s[Intern("__toString")]; exists {
+		sExpr := &Expression{Value: s}
+		if ts, ok := sExpr.ApplyFunc(toFuncExpr.Eval()).(NixValueWithToString); ok {
+			return ts.ToString()
+		}
+	} else if outPath, exists := s[Intern("outPath")]; exists {
+		if ts, ok := outPath.Eval().(NixValueWithToString); ok {
+			return ts.ToString()
+		}
+	}
+	panic(fmt.Sprintln("unable to convert set to string"))
 }
 
 func (set NixSet) Bind1(sym Sym, x *Expression) {
@@ -177,6 +233,10 @@ type NixPath struct {
 	Path string
 }
 
+func (p *NixPath) Print(recurse bool) string {
+	return path.Join(p.Root, p.Path)
+}
+
 func (p *NixPath) ToString() string {
 	return path.Join(p.Root, p.Path)
 }
@@ -197,6 +257,10 @@ type NixString struct {
 	// to Nix version
 	// { "2.18": "reference to Nix version" }
 	Impurities map[string]string
+}
+
+func (str *NixString) Print(recurse bool) string {
+	return `"` + strings.ReplaceAll(str.Content, "\n", `\n`) + `"`
 }
 
 func (str *NixString) ToString() string {
@@ -231,10 +295,10 @@ type NixFunction struct {
 	HasFormal   bool
 	HasEllipsis bool
 	Body        *p.Node
-	Scope       *Scope
+	Expression  *Expression
 }
 
-func (f *NixFunction) ToString() string {
+func (f *NixFunction) Print(recurse bool) string {
 	return "«lambda»"
 }
 
@@ -249,7 +313,7 @@ type NixPrimop struct {
 	ArgNum     int
 }
 
-func (f *NixPrimop) ToString() string {
+func (f *NixPrimop) Print(recurse bool) string {
 	return "«primop»"
 }
 
@@ -262,7 +326,7 @@ type NixPartialPrimop struct {
 	ArgQueue []*Expression
 }
 
-func (f *NixPartialPrimop) ToString() string {
+func (f *NixPartialPrimop) Print(recurse bool) string {
 	return "«partially applied primop»"
 }
 

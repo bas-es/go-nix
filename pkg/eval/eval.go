@@ -28,17 +28,19 @@ type Expression struct {
 }
 
 // TODO: recursive :p logic should be here
-func (x *Expression) ToString() string {
+func (x *Expression) Print() string {
 	if x.Value == nil {
 		return "..."
 	} else {
-		return x.Value.ToString()
+		return x.Value.Print(false)
 	}
 }
 
 func (x *Expression) WithNode(n *p.Node) *Expression {
 	y := *x
 	y.Node = n
+	y.Value = nil
+	y.Lower = nil
 	return &y
 }
 
@@ -46,6 +48,8 @@ func (x *Expression) WithScoped(n *p.Node, scope *Scope) *Expression {
 	y := *x
 	y.Scope = scope
 	y.Node = n
+	y.Value = nil
+	y.Lower = nil
 	return &y
 }
 
@@ -260,61 +264,13 @@ func (x *Expression) resolve() {
 				fn.HasArg = true
 			}
 		}
-		fn.Scope = x.Scope
+		fn.Expression = x
 		x.Value = fn
 
 	case p.ApplyNode:
 		arg0 := x.WithNode(n.Nodes[0]).Eval()
 		arg := x.WithNode(n.Nodes[1])
-		if fn, ok := arg0.(*NixFunction); ok {
-			var out *Expression
-			set := make(NixSet, 1)
-			// TODO: Clearly explain why we need scope from function?
-			// Because body isn't converted to an expression?
-			scope := fn.Scope.Subscope(set, false)
-			// TODO: order wrong?
-			if fn.HasArg {
-				set[fn.Arg] = arg
-			}
-			if fn.HasFormal {
-				argSet, ok := arg.Eval().(NixSet)
-				if !ok {
-					panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
-				}
-				for sym, exprNode := range fn.Formal {
-					if fn.HasArg && sym == fn.Arg {
-						panic(fmt.Sprintln("duplicate formal function argument"))
-					}
-					if exprNode != nil {
-						set[sym] = x.WithScoped(exprNode, scope)
-					}
-				}
-				for sym, expr := range argSet {
-					if _, exists := fn.Formal[sym]; exists {
-						set[sym] = expr
-					} else if !fn.HasEllipsis {
-						panic(fmt.Sprintln("set has more than enough formals to call a function"))
-					}
-				}
-			}
-			out = x.WithScoped(fn.Body, scope)
-			x.Lower = out
-		} else if p, ok := arg0.(*NixPrimop); ok {
-			if p.ArgNum == 1 {
-				x.Value = p.Func(arg)
-			} else {
-				queue := make([]*Expression, 0, p.ArgNum)
-				queue = append(queue, arg)
-				x.Value = &NixPartialPrimop{Primop: p, ArgQueue: queue}
-			}
-		} else if p, ok := arg0.(*NixPartialPrimop); ok {
-			p.ArgQueue = append(p.ArgQueue, arg)
-			if len(p.ArgQueue) == p.Primop.ArgNum {
-				x.Value = p.Primop.Func(p.ArgQueue...)
-			}
-		} else {
-			panic(fmt.Sprintln("attempt to call something which is not a function"))
-		}
+		x.Value = arg.ApplyFunc(arg0)
 
 	case p.OpAddNode:
 		add1 := x.WithNode(n.Nodes[0]).Eval()
@@ -411,6 +367,60 @@ func (x *Expression) evalAttrpath() []Sym {
 		}
 	}
 	return attrs
+}
+
+// Apply a function/primop to an expression
+// expr.ApplyFunc(func)
+func (x *Expression) ApplyFunc(arg0 NixValue) NixValue {
+	if fn, ok := arg0.(*NixFunction); ok {
+		set := make(NixSet, 1)
+		fnExpr := fn.Expression
+		scope := fnExpr.Scope.Subscope(set, false)
+		// TODO: order wrong?
+		if fn.HasArg {
+			set[fn.Arg] = x
+		}
+		if fn.HasFormal {
+			argSet, ok := x.Eval().(NixSet)
+			if !ok {
+				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
+			}
+			for sym, exprNode := range fn.Formal {
+				if fn.HasArg && sym == fn.Arg {
+					panic(fmt.Sprintln("duplicate formal and function argument"))
+				}
+				if exprNode != nil {
+					set[sym] = fnExpr.WithScoped(exprNode, scope)
+				}
+			}
+			for sym, expr := range argSet {
+				if _, exists := fn.Formal[sym]; exists {
+					set[sym] = expr
+				} else if !fn.HasEllipsis {
+					panic(fmt.Sprintln("set has more than enough formals to call a function"))
+				}
+			}
+		}
+		// TODO: Not so lazy?
+		return fnExpr.WithScoped(fn.Body, scope).Eval()
+	} else if p, ok := arg0.(*NixPrimop); ok {
+		if p.ArgNum == 1 {
+			return p.Func(x)
+		} else {
+			queue := make([]*Expression, 0, p.ArgNum)
+			queue = append(queue, x)
+			return &NixPartialPrimop{Primop: p, ArgQueue: queue}
+		}
+	} else if p, ok := arg0.(*NixPartialPrimop); ok {
+		p.ArgQueue = append(p.ArgQueue, x)
+		if len(p.ArgQueue) == p.Primop.ArgNum {
+			return p.Primop.Func(p.ArgQueue...)
+		} else {
+			return p
+		}
+	} else {
+		panic(fmt.Sprintln("attempt to call something which is not a function"))
+	}
 }
 
 func (x *Expression) attrString() string {

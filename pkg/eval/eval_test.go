@@ -40,13 +40,13 @@ func TestEval(t *testing.T) {
 		{`3.232199`, `3.2322`},
 		{`323119232739.`, `3.23119e+11`},
 		{`{a.b = 1;} == { a = { b = 1; }; }`, `true`},
-		{`2.47207e+17 == 247207427047107403`, `true`},
+		{`2.47207e+17 == 247207427047107403`, `false`},
 		{`[[1][2 2]] ++ [[3 3 3]] == [[1][2 2][3 3 3]]`, `true`},
 		{`let s = { a.b = (a: a); }; in s == s`, `false`},
 	} {
 		pr, err := parser.ParseString(test[0])
 		assert.NoError(t, err)
-		s := ParseResult(pr).ToString()
+		s := ParseResult(pr).Print(false)
 		assert.Equal(t, test[1], s)
 	}
 }
