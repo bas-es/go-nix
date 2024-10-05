@@ -257,7 +257,7 @@ type NixNumber interface {
 	NixInt | NixFloat
 }
 
-func calculate[T NixNumber](num1, num2 T, op p.NodeType) NixValue {
+func numCalc[T NixNumber](num1, num2 T, op p.NodeType) NixValue {
 	switch op {
 	case p.OpAddNode:
 		return NixValue(num1 + num2)
@@ -282,11 +282,11 @@ func calculate[T NixNumber](num1, num2 T, op p.NodeType) NixValue {
 	}
 }
 
-func Calculate(val1 NixValue, val2 NixValue, op p.NodeType) NixValue {
+func NumCalc(val1 NixValue, val2 NixValue, op p.NodeType) NixValue {
 	int1, ok1 := val1.(NixInt)
 	int2, ok2 := val2.(NixInt)
 	if ok1 && ok2 {
-		return calculate(int1, int2, op)
+		return numCalc(int1, int2, op)
 	} else {
 		var float1, float2 NixFloat
 		var ok1_, ok2_ bool
@@ -303,9 +303,27 @@ func Calculate(val1 NixValue, val2 NixValue, op p.NodeType) NixValue {
 			float2, ok2_ = val2.(NixFloat)
 		}
 		if ok1_ && ok2_ {
-			return calculate(float1, float2, op)
+			return numCalc(float1, float2, op)
 		} else {
 			panic(fmt.Sprintln("Cannot perform calculation"))
 		}
+	}
+}
+
+func BinCalc(val1 NixValue, val2 NixValue, op p.NodeType) NixBool {
+	b1, ok1 := val1.(NixBool)
+	b2, ok2 := val2.(NixBool)
+	if !ok1 || !ok2 {
+		panic(fmt.Sprintln("Cannot perform binary calculation"))
+	}
+	switch op {
+	case p.OpAndNode:
+		return NixBool(b1 && b2)
+	case p.OpOrNode:
+		return NixBool(b1 || b2)
+	case p.OpImplNode:
+		return NixBool(!b1 || b2)
+	default:
+		panic(fmt.Sprintln("wrong operation"))
 	}
 }

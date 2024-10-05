@@ -311,7 +311,7 @@ func (x *Expression) resolve() {
 				return
 			}
 		}
-		x.Value = Calculate(add1, add2, p.OpAddNode)
+		x.Value = NumCalc(add1, add2, p.OpAddNode)
 
 	case p.OpConcatNode:
 		add1 := x.WithNode(n.Nodes[0]).Eval()
@@ -338,7 +338,30 @@ func (x *Expression) resolve() {
 	case p.OpReduceNode, p.OpMultiplyNode, p.OpDivideNode, p.OpGreaterNode, p.OpLessNode, p.OpGeqNode, p.OpLeqNode:
 		num1 := x.WithNode(n.Nodes[0]).Eval()
 		num2 := x.WithNode(n.Nodes[1]).Eval()
-		x.Value = Calculate(num1, num2, nt)
+		x.Value = NumCalc(num1, num2, nt)
+
+	case p.OpNegateNode:
+		val := x.WithNode(n.Nodes[0]).Eval()
+		if i, ok := val.(NixInt); ok {
+			x.Value = NixInt(-i)
+		} else if f, ok := val.(NixFloat); ok {
+			x.Value = NixFloat(-f)
+		} else {
+			panic(fmt.Sprintln("cannot give the negative form, not a number"))
+		}
+
+	case p.OpAndNode, p.OpOrNode, p.OpImplNode:
+		b1 := x.WithNode(n.Nodes[0]).Eval()
+		b2 := x.WithNode(n.Nodes[1]).Eval()
+		x.Value = BinCalc(b1, b2, nt)
+
+	case p.OpNotNode:
+		val := x.WithNode(n.Nodes[0]).Eval()
+		if b, ok := val.(NixBool); ok {
+			x.Value = NixBool(!b)
+		} else {
+			panic(fmt.Sprintln("cannot negate, not a boolean"))
+		}
 
 	case p.OpEqNode, p.OpNeqNode:
 		val1 := x.WithNode(n.Nodes[0]).Eval()
