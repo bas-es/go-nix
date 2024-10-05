@@ -340,6 +340,8 @@ func InterpString(val NixValue) string {
 		return v.ToString()
 	case *NixPath:
 		return v.ToString()
+	case NixSet:
+		return v.ToString()
 	default:
 		panic(fmt.Errorf("can not coerce %v to a string", val))
 	}
