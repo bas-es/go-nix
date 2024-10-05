@@ -242,6 +242,34 @@ func (f *NixFunction) Compare(val NixValue) bool {
 	return false
 }
 
+// Builtin functions
+type NixPrimop struct {
+	Func       func(...*Expression) NixValue
+	DocComment string
+	ArgNum     int
+}
+
+func (f *NixPrimop) ToString() string {
+	return "«primop»"
+}
+
+func (f *NixPrimop) Compare(val NixValue) bool {
+	return false
+}
+
+type NixPartialPrimop struct {
+	Primop   *NixPrimop
+	ArgQueue []*Expression
+}
+
+func (f *NixPartialPrimop) ToString() string {
+	return "«partially applied primop»"
+}
+
+func (f *NixPartialPrimop) Compare(val NixValue) bool {
+	return false
+}
+
 func InterpString(val NixValue) string {
 	switch v := val.(type) {
 	case *NixString:

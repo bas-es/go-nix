@@ -25,6 +25,7 @@ func (st *Symtab) Name(sym Sym) string {
 	return st.names[sym]
 }
 
+// TODO: Not capable of multiple (large?) files?
 var globalSymtab = NewSymtab()
 
 func Intern(name string) Sym {

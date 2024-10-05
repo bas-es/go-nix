@@ -264,43 +264,57 @@ func (x *Expression) resolve() {
 		x.Value = fn
 
 	case p.ApplyNode:
-		fn, ok := x.WithNode(n.Nodes[0]).Eval().(*NixFunction)
-		if !ok {
+		arg0 := x.WithNode(n.Nodes[0]).Eval()
+		arg := x.WithNode(n.Nodes[1])
+		if fn, ok := arg0.(*NixFunction); ok {
+			var out *Expression
+			set := make(NixSet, 1)
+			// TODO: Clearly explain why we need scope from function?
+			// Because body isn't converted to an expression?
+			scope := fn.Scope.Subscope(set, false)
+			// TODO: order wrong?
+			if fn.HasArg {
+				set[fn.Arg] = arg
+			}
+			if fn.HasFormal {
+				argSet, ok := arg.Eval().(NixSet)
+				if !ok {
+					panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
+				}
+				for sym, exprNode := range fn.Formal {
+					if fn.HasArg && sym == fn.Arg {
+						panic(fmt.Sprintln("duplicate formal function argument"))
+					}
+					if exprNode != nil {
+						set[sym] = x.WithScoped(exprNode, scope)
+					}
+				}
+				for sym, expr := range argSet {
+					if _, exists := fn.Formal[sym]; exists {
+						set[sym] = expr
+					} else if !fn.HasEllipsis {
+						panic(fmt.Sprintln("set has more than enough formals to call a function"))
+					}
+				}
+			}
+			out = x.WithScoped(fn.Body, scope)
+			x.Lower = out
+		} else if p, ok := arg0.(*NixPrimop); ok {
+			if p.ArgNum == 1 {
+				x.Value = p.Func(arg)
+			} else {
+				queue := make([]*Expression, 0, p.ArgNum)
+				queue = append(queue, arg)
+				x.Value = &NixPartialPrimop{Primop: p, ArgQueue: queue}
+			}
+		} else if p, ok := arg0.(*NixPartialPrimop); ok {
+			p.ArgQueue = append(p.ArgQueue, arg)
+			if len(p.ArgQueue) == p.Primop.ArgNum {
+				x.Value = p.Primop.Func(p.ArgQueue...)
+			}
+		} else {
 			panic(fmt.Sprintln("attempt to call something which is not a function"))
 		}
-		arg := x.WithNode(n.Nodes[1])
-		var out *Expression
-		set := make(NixSet, 1)
-		// TODO: Clearly explain why we need scope from function?
-		// Because body isn't converted to an expression?
-		scope := fn.Scope.Subscope(set, false)
-		// TODO: order wrong?
-		if fn.HasArg {
-			set[fn.Arg] = arg
-		}
-		if fn.HasFormal {
-			argSet, ok := arg.Eval().(NixSet)
-			if !ok {
-				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
-			}
-			for sym, exprNode := range fn.Formal {
-				if fn.HasArg && sym == fn.Arg {
-					panic(fmt.Sprintln("duplicate formal function argument"))
-				}
-				if exprNode != nil {
-					set[sym] = x.WithScoped(exprNode, scope)
-				}
-			}
-			for sym, expr := range argSet {
-				if _, exists := fn.Formal[sym]; exists {
-					set[sym] = expr
-				} else if !fn.HasEllipsis {
-					panic(fmt.Sprintln("set has more than enough formals to call a function"))
-				}
-			}
-		}
-		out = x.WithScoped(fn.Body, scope)
-		x.Lower = out
 
 	case p.OpAddNode:
 		add1 := x.WithNode(n.Nodes[0]).Eval()
@@ -413,7 +427,7 @@ func (x *Expression) attrString() string {
 }
 
 func ParseResult(pr *p.Parser) NixValue {
-	x := Expression{Parser: pr, Node: pr.Result}
+	x := Expression{Parser: pr, Node: pr.Result, Scope: DefaultScope}
 	return x.Eval()
 }
 
