@@ -30,6 +30,15 @@
         };
         default = go-nix;
       };
+      devShells.default = with pkgs; mkShell {
+        packages = [
+          go
+          gotools
+          ragel
+          gore # test go feature
+          graphviz # go tool pprof
+        ];
+      };
     };
   };
 }

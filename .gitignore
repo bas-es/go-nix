@@ -2,3 +2,4 @@
 /pkg/parser/y.go
 /pkg/parser/machine.go
 /gon
+/.direnv
