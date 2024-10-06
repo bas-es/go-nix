@@ -268,9 +268,12 @@ func (x *Expression) resolve() {
 		x.Value = fn
 
 	case p.ApplyNode:
-		arg0 := x.WithNode(n.Nodes[0]).Eval()
+		arg0, ok := x.WithNode(n.Nodes[0]).Eval().(NixValueWithApply)
+		if !ok {
+			panic("calling something not a function or primop")
+		}
 		arg := x.WithNode(n.Nodes[1])
-		x.Value = arg.ApplyFunc(arg0)
+		x.Value = arg0.Apply(arg)
 
 	case p.OpAddNode:
 		add1 := x.WithNode(n.Nodes[0]).Eval()
@@ -367,16 +370,6 @@ func (x *Expression) evalAttrpath() []Sym {
 		}
 	}
 	return attrs
-}
-
-// Apply a function/primop to an expression
-// expr.ApplyFunc(func)
-func (x *Expression) ApplyFunc(arg0 NixValue) NixValue {
-	if fn, ok := arg0.(NixValueWithApply); ok {
-		return fn.Apply(x)
-	} else {
-		panic(fmt.Sprintln("attempt to call something which is not a function"))
-	}
 }
 
 func (x *Expression) attrString() string {

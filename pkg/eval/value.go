@@ -168,10 +168,16 @@ func (s NixSet) Print(recurse bool) string {
 
 func (s NixSet) ToString() string {
 	if toFuncExpr, exists := s[Intern("__toString")]; exists {
-		sExpr := &Expression{Value: s}
-		if ts, ok := sExpr.ApplyFunc(toFuncExpr.Eval()).(NixValueWithToString); ok {
-			return ts.ToString()
+		toFunc, ok := toFuncExpr.Eval().(NixValueWithApply)
+		if !ok {
+			panic(fmt.Sprintln("value of __toString attribute is not a function or primop"))
 		}
+		sExpr := &Expression{Value: s}
+		ts, ok := toFunc.Apply(sExpr).(NixValueWithToString)
+		if !ok {
+			panic(fmt.Sprintln("cannot convert output of __toString to string"))
+		}
+		return ts.ToString()
 	} else if outPath, exists := s[Intern("outPath")]; exists {
 		if ts, ok := outPath.Eval().(NixValueWithToString); ok {
 			return ts.ToString()

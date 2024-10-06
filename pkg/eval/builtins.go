@@ -13,6 +13,7 @@ var BuiltinsExposed = map[string]NixValue{
 	"__functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
 	"__tail":         &NixPrimop{Func: bTail, ArgNum: 1},
 	"false":          NixBool(false),
+	"map":            &NixPrimop{Func: bMap, ArgNum: 2},
 	"null":           &NixNull{},
 	"throw":          &NixPrimop{Func: bThrow, ArgNum: 1},
 	"toString":       &NixPrimop{Func: bToString, ArgNum: 1},
@@ -26,6 +27,7 @@ var BuiltinsInSet = map[string]NixValue{
 	"concatLists":  &NixPrimop{Func: bConcatLists, ArgNum: 1},
 	"false":        NixBool(false),
 	"functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
+	"map":            &NixPrimop{Func: bMap, ArgNum: 2},
 	"null":         &NixNull{},
 	"tail":         &NixPrimop{Func: bTail, ArgNum: 1},
 	"throw":        &NixPrimop{Func: bThrow, ArgNum: 1},
@@ -120,6 +122,22 @@ func bFunctionArgs(args ...*Expression) NixValue {
 	} else {
 		return make(NixSet, 0)
 	}
+}
+
+func bMap(args ...*Expression) NixValue {
+	f, ok := args[0].Eval().(NixValueWithApply)
+	if !ok {
+		panic("first argument of builtins.map not a function/primop")
+	}
+	l, ok := args[1].Eval().(NixList)
+	if !ok {
+		panic("second argument of builtins.map not a list")
+	}
+	result := make(NixList, len(l))
+	for n, elem := range(l) {
+		result[n] = &Expression{Value: f.Apply(elem)}
+	}
+	return result
 }
 
 func bTail(args ...*Expression) NixValue {
