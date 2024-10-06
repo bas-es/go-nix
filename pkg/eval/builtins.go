@@ -2,29 +2,41 @@ package eval
 
 import (
 	p "github.com/orivej/go-nix/pkg/parser"
-	"regexp"
 	"sort"
 )
 
 var builtinsNoUnderline = map[string]bool{
-	"false": true,
-	"map": true,
-	"null": true,
-	"throw": true,
+	"false":    true,
+	"isNull":   true,
+	"map":      true,
+	"null":     true,
+	"throw":    true,
 	"toString": true,
-	"true": true,
+	"true":     true,
 }
 
 var builtinsInSet = map[string]NixValue{
 	"add":          &NixPrimop{Func: bAdd, ArgNum: 2},
+	"all":          &NixPrimop{Func: bAll, ArgNum: 2},
+	"any":          &NixPrimop{Func: bAny, ArgNum: 2},
 	"attrNames":    &NixPrimop{Func: bAttrNames, ArgNum: 1},
 	"attrValues":   &NixPrimop{Func: bAttrValues, ArgNum: 1},
 	"catAttrs":     &NixPrimop{Func: bCatAttrs, ArgNum: 2},
 	"concatLists":  &NixPrimop{Func: bConcatLists, ArgNum: 1},
 	"false":        NixBool(false),
+	"filter":       &NixPrimop{Func: bFilter, ArgNum: 2},
 	"functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
 	"genList":      &NixPrimop{Func: bGenList, ArgNum: 2},
 	"head":         &NixPrimop{Func: bHead, ArgNum: 1},
+	"isAttrs":      &NixPrimop{Func: bIsAttrs, ArgNum: 1},
+	"isBool":       &NixPrimop{Func: bIsBool, ArgNum: 1},
+	"isFloat":      &NixPrimop{Func: bIsFloat, ArgNum: 1},
+	"isFunction":   &NixPrimop{Func: bIsFunction, ArgNum: 1},
+	"isInt":        &NixPrimop{Func: bIsInt, ArgNum: 1},
+	"isList":       &NixPrimop{Func: bIsList, ArgNum: 1},
+	"isNull":       &NixPrimop{Func: bIsNull, ArgNum: 1},
+	"isPath":       &NixPrimop{Func: bIsPath, ArgNum: 1},
+	"isString":     &NixPrimop{Func: bIsString, ArgNum: 1},
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
 	"null":         &NixNull{},
 	"partition":    &NixPrimop{Func: bPartition, ArgNum: 2},
@@ -42,7 +54,7 @@ var DefaultScope = func() *Scope {
 		if _, exists := builtinsNoUnderline[name]; exists {
 			mainSet[Intern(name)] = &Expression{Value: val}
 		} else {
-			mainSet[Intern("__" + name)] = &Expression{Value: val}
+			mainSet[Intern("__"+name)] = &Expression{Value: val}
 		}
 	}
 	builtinsSet[Intern("builtins")] = &Expression{Value: builtinsSet}
@@ -52,6 +64,50 @@ var DefaultScope = func() *Scope {
 
 func bAdd(args ...*Expression) NixValue {
 	return NumCalc(args[0].Eval(), args[1].Eval(), p.OpAddNode)
+}
+
+func bAll(args ...*Expression) NixValue {
+	f, ok := args[0].Eval().(NixValueWithApply)
+	if !ok {
+		panic("first argument of builtins.all is not a function or primop")
+	}
+	l, ok := args[1].Eval().(NixList)
+	if !ok {
+		panic("second argument of builtins.all is not a list")
+	}
+	result := true
+	for _, elem := range l {
+		cond, ok := f.Apply(elem).(NixBool)
+		if !ok {
+			panic("return value for the nth element of list is not a bool")
+		}
+		if !cond {
+			result = false
+		}
+	}
+	return NixBool(result)
+}
+
+func bAny(args ...*Expression) NixValue {
+	f, ok := args[0].Eval().(NixValueWithApply)
+	if !ok {
+		panic("first argument of builtins.any is not a function or primop")
+	}
+	l, ok := args[1].Eval().(NixList)
+	if !ok {
+		panic("second argument of builtins.any is not a list")
+	}
+	result := false
+	for _, elem := range l {
+		cond, ok := f.Apply(elem).(NixBool)
+		if !ok {
+			panic("return value for the nth element of list is not a bool")
+		}
+		if cond {
+			result = true
+		}
+	}
+	return NixBool(result)
 }
 
 func bAttrNames(args ...*Expression) NixValue {
@@ -126,6 +182,28 @@ func bConcatLists(args ...*Expression) NixValue {
 	return result
 }
 
+func bFilter(args ...*Expression) NixValue {
+	f, ok := args[0].Eval().(NixValueWithApply)
+	if !ok {
+		panic("first argument of builtins.filter is not a function or primop")
+	}
+	l, ok := args[1].Eval().(NixList)
+	if !ok {
+		panic("second argument of builtins.filter is not a list")
+	}
+	result := make(NixList, 0, len(l))
+	for _, elem := range l {
+		cond, ok := f.Apply(elem).(NixBool)
+		if !ok {
+			panic("return value for the nth element of list is not a bool")
+		}
+		if cond {
+			result = append(result, elem)
+		}
+	}
+	return result
+}
+
 func bFunctionArgs(args ...*Expression) NixValue {
 	f, ok := args[0].Eval().(*NixFunction)
 	if !ok {
@@ -172,6 +250,51 @@ func bHead(args ...*Expression) NixValue {
 		panic("argument of builtins.tail is an empty list")
 	}
 	return l[0].Eval()
+}
+
+func bIsAttrs(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixSet)
+	return NixBool(ok)
+}
+
+func bIsBool(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixBool)
+	return NixBool(ok)
+}
+
+func bIsFloat(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixFloat)
+	return NixBool(ok)
+}
+
+func bIsFunction(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixValueWithApply)
+	return NixBool(ok)
+}
+
+func bIsInt(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixInt)
+	return NixBool(ok)
+}
+
+func bIsList(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(NixList)
+	return NixBool(ok)
+}
+
+func bIsNull(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(*NixNull)
+	return NixBool(ok)
+}
+
+func bIsPath(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(*NixPath)
+	return NixBool(ok)
+}
+
+func bIsString(args ...*Expression) NixValue {
+	_, ok := args[0].Eval().(*NixString)
+	return NixBool(ok)
 }
 
 func bMap(args ...*Expression) NixValue {

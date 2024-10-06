@@ -293,7 +293,7 @@ func (str *NixString) Compare(val NixValue) bool {
 	}
 }
 
-type NixValueWithApply interface{
+type NixValueWithApply interface {
 	NixValue
 	Apply(*Expression) NixValue
 }
