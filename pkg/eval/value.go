@@ -287,6 +287,11 @@ func (str *NixString) Compare(val NixValue) bool {
 	}
 }
 
+type NixValueWithApply interface{
+	NixValue
+	Apply(*Expression) NixValue
+}
+
 type NixFunction struct {
 	// TODO: position
 	Arg         Sym
@@ -306,6 +311,39 @@ func (f *NixFunction) Compare(val NixValue) bool {
 	return false
 }
 
+func (f *NixFunction) Apply(expr *Expression) NixValue {
+	set := make(NixSet, 1)
+	fnExpr := f.Expression
+	scope := fnExpr.Scope.Subscope(set, false)
+	// TODO: order wrong?
+	if f.HasArg {
+		set[f.Arg] = expr
+	}
+	if f.HasFormal {
+		argSet, ok := expr.Eval().(NixSet)
+		if !ok {
+			panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
+		}
+		for sym, exprNode := range f.Formal {
+			if f.HasArg && sym == f.Arg {
+				panic(fmt.Sprintln("duplicate formal and function argument"))
+			}
+			if exprNode != nil {
+				set[sym] = fnExpr.WithScoped(exprNode, scope)
+			}
+		}
+		for sym, expr := range argSet {
+			if _, exists := f.Formal[sym]; exists {
+				set[sym] = expr
+			} else if !f.HasEllipsis {
+				panic(fmt.Sprintln("set has more than enough formals to call a function"))
+			}
+		}
+	}
+	// TODO: Not so lazy?
+	return fnExpr.WithScoped(f.Body, scope).Eval()
+}
+
 // Builtin functions
 type NixPrimop struct {
 	Func       func(...*Expression) NixValue
@@ -313,12 +351,22 @@ type NixPrimop struct {
 	ArgNum     int
 }
 
-func (f *NixPrimop) Print(recurse bool) string {
+func (p *NixPrimop) Print(recurse bool) string {
 	return "«primop»"
 }
 
-func (f *NixPrimop) Compare(val NixValue) bool {
+func (p *NixPrimop) Compare(val NixValue) bool {
 	return false
+}
+
+func (p *NixPrimop) Apply(expr *Expression) NixValue {
+	if p.ArgNum == 1 {
+		return p.Func(expr)
+	} else {
+		queue := make([]*Expression, 0, p.ArgNum)
+		queue = append(queue, expr)
+		return &NixPartialPrimop{Primop: p, ArgQueue: queue}
+	}
 }
 
 type NixPartialPrimop struct {
@@ -326,12 +374,22 @@ type NixPartialPrimop struct {
 	ArgQueue []*Expression
 }
 
-func (f *NixPartialPrimop) Print(recurse bool) string {
+func (pp *NixPartialPrimop) Print(recurse bool) string {
 	return "«partially applied primop»"
 }
 
-func (f *NixPartialPrimop) Compare(val NixValue) bool {
+func (pp *NixPartialPrimop) Compare(val NixValue) bool {
 	return false
+}
+
+func (pp *NixPartialPrimop) Apply(expr *Expression) NixValue {
+	ppNew := *pp
+	ppNew.ArgQueue = append(pp.ArgQueue, expr)
+	if len(pp.ArgQueue) == pp.Primop.ArgNum {
+		return pp.Primop.Func(pp.ArgQueue...)
+	} else {
+		return &ppNew
+	}
 }
 
 func InterpString(val NixValue) string {

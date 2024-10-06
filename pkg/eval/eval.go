@@ -372,52 +372,8 @@ func (x *Expression) evalAttrpath() []Sym {
 // Apply a function/primop to an expression
 // expr.ApplyFunc(func)
 func (x *Expression) ApplyFunc(arg0 NixValue) NixValue {
-	if fn, ok := arg0.(*NixFunction); ok {
-		set := make(NixSet, 1)
-		fnExpr := fn.Expression
-		scope := fnExpr.Scope.Subscope(set, false)
-		// TODO: order wrong?
-		if fn.HasArg {
-			set[fn.Arg] = x
-		}
-		if fn.HasFormal {
-			argSet, ok := x.Eval().(NixSet)
-			if !ok {
-				panic(fmt.Sprintln("calling a function with formal but argument is not a set"))
-			}
-			for sym, exprNode := range fn.Formal {
-				if fn.HasArg && sym == fn.Arg {
-					panic(fmt.Sprintln("duplicate formal and function argument"))
-				}
-				if exprNode != nil {
-					set[sym] = fnExpr.WithScoped(exprNode, scope)
-				}
-			}
-			for sym, expr := range argSet {
-				if _, exists := fn.Formal[sym]; exists {
-					set[sym] = expr
-				} else if !fn.HasEllipsis {
-					panic(fmt.Sprintln("set has more than enough formals to call a function"))
-				}
-			}
-		}
-		// TODO: Not so lazy?
-		return fnExpr.WithScoped(fn.Body, scope).Eval()
-	} else if p, ok := arg0.(*NixPrimop); ok {
-		if p.ArgNum == 1 {
-			return p.Func(x)
-		} else {
-			queue := make([]*Expression, 0, p.ArgNum)
-			queue = append(queue, x)
-			return &NixPartialPrimop{Primop: p, ArgQueue: queue}
-		}
-	} else if p, ok := arg0.(*NixPartialPrimop); ok {
-		p.ArgQueue = append(p.ArgQueue, x)
-		if len(p.ArgQueue) == p.Primop.ArgNum {
-			return p.Primop.Func(p.ArgQueue...)
-		} else {
-			return p
-		}
+	if fn, ok := arg0.(NixValueWithApply); ok {
+		return fn.Apply(x)
 	} else {
 		panic(fmt.Sprintln("attempt to call something which is not a function"))
 	}
