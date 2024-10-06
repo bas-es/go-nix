@@ -391,8 +391,8 @@ func (pp *NixPartialPrimop) Compare(val NixValue) bool {
 func (pp *NixPartialPrimop) Apply(expr *Expression) NixValue {
 	ppNew := *pp
 	ppNew.ArgQueue = append(pp.ArgQueue, expr)
-	if len(pp.ArgQueue) == pp.Primop.ArgNum {
-		return pp.Primop.Func(pp.ArgQueue...)
+	if len(ppNew.ArgQueue) == ppNew.Primop.ArgNum {
+		return ppNew.Primop.Func(ppNew.ArgQueue...)
 	} else {
 		return &ppNew
 	}
