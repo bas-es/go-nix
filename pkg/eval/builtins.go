@@ -31,6 +31,7 @@ var builtinsInSet = map[string]NixValue{
 	"false":        NixBool(false),
 	"filter":       &NixPrimop{Func: bFilter, ArgNum: 2},
 	"floor":        &NixPrimop{Func: bFloor, ArgNum: 1},
+	"fromJSON":     &NixPrimop{Func: bFromJSON, ArgNum: 1},
 	"functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
 	"genList":      &NixPrimop{Func: bGenList, ArgNum: 2},
 	"groupBy":      &NixPrimop{Func: bGroupBy, ArgNum: 2},
@@ -49,14 +50,15 @@ var builtinsInSet = map[string]NixValue{
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
 	"match":        &NixPrimop{Func: bMatch, ArgNum: 2},
 	"mul":          &NixPrimop{Func: bMul, ArgNum: 2},
+	"null":         &NixNull{},
+	"partition":    &NixPrimop{Func: bPartition, ArgNum: 2},
 	"seq":          &NixPrimop{Func: bSeq, ArgNum: 2},
 	"sort":         &NixPrimop{Func: bSort, ArgNum: 2},
 	"stringLength": &NixPrimop{Func: bStringLength, ArgNum: 1},
 	"sub":          &NixPrimop{Func: bSub, ArgNum: 2},
-	"null":         &NixNull{},
-	"partition":    &NixPrimop{Func: bPartition, ArgNum: 2},
 	"tail":         &NixPrimop{Func: bTail, ArgNum: 1},
 	"throw":        &NixPrimop{Func: bThrow, ArgNum: 1},
+	"toJSON":       &NixPrimop{Func: bToJSON, ArgNum: 1},
 	"toString":     &NixPrimop{Func: bToString, ArgNum: 1},
 	"true":         NixBool(true),
 	"typeOf":       &NixPrimop{Func: bTypeOf, ArgNum: 1},
@@ -189,6 +191,11 @@ func bFilter(args ...*Expression) NixValue {
 func bFloor(args ...*Expression) NixValue {
 	fl := AssertType[NixFloat](args[0].Eval())
 	return NixInt(math.Floor(float64(fl)))
+}
+
+func bFromJSON(args ...*Expression) NixValue {
+	str := AssertType[*NixString](args[0].Eval())
+	return ValueFromJSON(str)
 }
 
 func bFunctionArgs(args ...*Expression) NixValue {
@@ -385,6 +392,10 @@ func bTail(args ...*Expression) NixValue {
 		panic("argument of builtins.tail is an empty list")
 	}
 	return l[1:]
+}
+
+func bToJSON(args ...*Expression) NixValue {
+	return ValueToJSON(args[0].Eval())
 }
 
 func bToString(args ...*Expression) NixValue {

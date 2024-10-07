@@ -281,7 +281,9 @@ type NixString struct {
 }
 
 func (str *NixString) Print(recurse int) string {
-	return `"` + strings.ReplaceAll(str.Content, "\n", `\n`) + `"`
+	result := strings.ReplaceAll(str.Content, "\n", `\n`)
+	result = strings.ReplaceAll(result, `"`, `\"`)
+	return `"` + result + `"`
 }
 
 func (str *NixString) ToString() string {
