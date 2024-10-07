@@ -43,6 +43,7 @@ var builtinsInSet = map[string]NixValue{
 	"isNull":       &NixPrimop{Func: bIsNull, ArgNum: 1},
 	"isPath":       &NixPrimop{Func: bIsPath, ArgNum: 1},
 	"isString":     &NixPrimop{Func: bIsString, ArgNum: 1},
+	"length":       &NixPrimop{Func: bLength, ArgNum: 1},
 	"lessThan":     &NixPrimop{Func: bLessThan, ArgNum: 2},
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
 	"mul":          &NixPrimop{Func: bMul, ArgNum: 2},
@@ -292,6 +293,11 @@ func bIsPath(args ...*Expression) NixValue {
 func bIsString(args ...*Expression) NixValue {
 	_, ok := args[0].Eval().(*NixString)
 	return NixBool(ok)
+}
+
+func bLength(args ...*Expression) NixValue {
+	l := AssertType[NixList](args[0].Eval())
+	return NixInt(len(l))
 }
 
 func bLessThan(args ...*Expression) NixValue {
