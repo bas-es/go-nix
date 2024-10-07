@@ -2,6 +2,7 @@ package eval
 
 import (
 	p "github.com/orivej/go-nix/pkg/parser"
+	"math"
 	"sort"
 )
 
@@ -23,10 +24,15 @@ var builtinsInSet = map[string]NixValue{
 	"attrValues":   &NixPrimop{Func: bAttrValues, ArgNum: 1},
 	"catAttrs":     &NixPrimop{Func: bCatAttrs, ArgNum: 2},
 	"concatLists":  &NixPrimop{Func: bConcatLists, ArgNum: 1},
+	"div":          &NixPrimop{Func: bDiv, ArgNum: 2},
+	"elem":         &NixPrimop{Func: bElem, ArgNum: 2},
+	"elemAt":       &NixPrimop{Func: bElemAt, ArgNum: 2},
 	"false":        NixBool(false),
 	"filter":       &NixPrimop{Func: bFilter, ArgNum: 2},
+	"floor":        &NixPrimop{Func: bFloor, ArgNum: 1},
 	"functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
 	"genList":      &NixPrimop{Func: bGenList, ArgNum: 2},
+	"groupBy":      &NixPrimop{Func: bGroupBy, ArgNum: 2},
 	"head":         &NixPrimop{Func: bHead, ArgNum: 1},
 	"isAttrs":      &NixPrimop{Func: bIsAttrs, ArgNum: 1},
 	"isBool":       &NixPrimop{Func: bIsBool, ArgNum: 1},
@@ -37,7 +43,12 @@ var builtinsInSet = map[string]NixValue{
 	"isNull":       &NixPrimop{Func: bIsNull, ArgNum: 1},
 	"isPath":       &NixPrimop{Func: bIsPath, ArgNum: 1},
 	"isString":     &NixPrimop{Func: bIsString, ArgNum: 1},
+	"lessThan":     &NixPrimop{Func: bLessThan, ArgNum: 2},
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
+	"mul":          &NixPrimop{Func: bMul, ArgNum: 2},
+	"seq":          &NixPrimop{Func: bSeq, ArgNum: 2},
+	"stringLength": &NixPrimop{Func: bStringLength, ArgNum: 1},
+	"sub":          &NixPrimop{Func: bSub, ArgNum: 2},
 	"null":         &NixNull{},
 	"partition":    &NixPrimop{Func: bPartition, ArgNum: 2},
 	"tail":         &NixPrimop{Func: bTail, ArgNum: 1},
@@ -70,27 +81,25 @@ func bAdd(args ...*Expression) NixValue {
 func bAll(args ...*Expression) NixValue {
 	f := AssertType[NixLambda](args[0].Eval())
 	l := AssertType[NixList](args[1].Eval())
-	result := true
 	for _, elem := range l {
 		cond := AssertType[NixBool](f.Apply(elem))
 		if !cond {
-			result = false
+			return NixBool(false)
 		}
 	}
-	return NixBool(result)
+	return NixBool(true)
 }
 
 func bAny(args ...*Expression) NixValue {
 	f := AssertType[NixLambda](args[0].Eval())
 	l := AssertType[NixList](args[1].Eval())
-	result := false
 	for _, elem := range l {
 		cond := AssertType[NixBool](f.Apply(elem))
 		if cond {
-			result = true
+			return NixBool(true)
 		}
 	}
-	return NixBool(result)
+	return NixBool(false)
 }
 
 func bAttrNames(args ...*Expression) NixValue {
@@ -143,6 +152,30 @@ func bConcatLists(args ...*Expression) NixValue {
 	return result
 }
 
+func bDiv(args ...*Expression) NixValue {
+	return NumCalc(args[0].Eval(), args[1].Eval(), p.OpDivideNode)
+}
+
+func bElem(args ...*Expression) NixValue {
+	elem := AssertType[NixInt](args[0].Eval())
+	list := AssertType[NixList](args[1].Eval())
+	for _, expr := range list {
+		if elem.Compare(expr.Eval()) {
+			return NixBool(true)
+		}
+	}
+	return NixBool(false)
+}
+
+func bElemAt(args ...*Expression) NixValue {
+	list := AssertType[NixList](args[0].Eval())
+	index := AssertType[NixInt](args[1].Eval())
+	if int64(index) >= int64(len(list)) {
+		panic("index is out of bounds of list provided")
+	}
+	return list[index].Eval()
+}
+
 func bFilter(args ...*Expression) NixValue {
 	f := AssertType[NixLambda](args[0].Eval())
 	l := AssertType[NixList](args[1].Eval())
@@ -154,6 +187,11 @@ func bFilter(args ...*Expression) NixValue {
 		}
 	}
 	return result
+}
+
+func bFloor(args ...*Expression) NixValue {
+	fl := AssertType[NixFloat](args[0].Eval())
+	return NixInt(math.Floor(float64(fl)))
 }
 
 func bFunctionArgs(args ...*Expression) NixValue {
@@ -184,10 +222,29 @@ func bGenList(args ...*Expression) NixValue {
 	return result
 }
 
+func bGroupBy(args ...*Expression) NixValue {
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
+	result := make(NixSet, 0)
+	for _, elem := range l {
+		group := AssertType[*NixString](f.Apply(elem))
+		sym := Intern(group.Content)
+		if expr, ok := result[sym]; ok {
+			l := AssertType[NixList](expr.Value)
+			result[sym].Value = append(l, elem)
+		} else {
+			lg := make(NixList, 0)
+			lg = append(lg, elem)
+			result[sym] = &Expression{Value: lg}
+		}
+	}
+	return result
+}
+
 func bHead(args ...*Expression) NixValue {
 	l := AssertType[NixList](args[0].Eval())
 	if len(l) == 0 {
-		panic("argument of builtins.tail is an empty list")
+		panic("argument of builtins.head is an empty list")
 	}
 	return l[0].Eval()
 }
@@ -237,6 +294,10 @@ func bIsString(args ...*Expression) NixValue {
 	return NixBool(ok)
 }
 
+func bLessThan(args ...*Expression) NixValue {
+	return NumCalc(args[0].Eval(), args[1].Eval(), p.OpLessNode)
+}
+
 func bMap(args ...*Expression) NixValue {
 	f := AssertType[NixLambda](args[0].Eval())
 	l := AssertType[NixList](args[1].Eval())
@@ -245,6 +306,10 @@ func bMap(args ...*Expression) NixValue {
 		result[n] = &Expression{Value: f.Apply(elem)}
 	}
 	return result
+}
+
+func bMul(args ...*Expression) NixValue {
+	return NumCalc(args[0].Eval(), args[1].Eval(), p.OpMultiplyNode)
 }
 
 func bPartition(args ...*Expression) NixValue {
@@ -264,6 +329,20 @@ func bPartition(args ...*Expression) NixValue {
 	result[Intern("right")] = &Expression{Value: right}
 	result[Intern("wrong")] = &Expression{Value: wrong}
 	return result
+}
+
+func bSeq(args ...*Expression) NixValue {
+	args[0].Eval()
+	return args[1].Eval()
+}
+
+func bStringLength(args ...*Expression) NixValue {
+	str := AssertType[*NixString](args[0].Eval())
+	return NixInt(len(str.Content))
+}
+
+func bSub(args ...*Expression) NixValue {
+	return NumCalc(args[0].Eval(), args[1].Eval(), p.OpReduceNode)
 }
 
 func bTail(args ...*Expression) NixValue {

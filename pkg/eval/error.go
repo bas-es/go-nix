@@ -6,24 +6,24 @@ import (
 
 func PrintType(val NixValue) string {
 	switch val.(type) {
-		case NixInt:
-			return "int"
-		case NixFloat:
-			return "float"
-		case NixBool:
-			return "bool"
-		case *NixNull:
-			return "null"
-		case NixList:
-			return "list"
-		case NixSet:
-			return "set"
-		case *NixPath:
-			return "path"
-		case *NixString:
-			return "string"
-		default: // if T below is `NixLambda`, type will be nil
-			return "lambda"
+	case NixInt:
+		return "int"
+	case NixFloat:
+		return "float"
+	case NixBool:
+		return "bool"
+	case *NixNull:
+		return "null"
+	case NixList:
+		return "list"
+	case NixSet:
+		return "set"
+	case *NixPath:
+		return "path"
+	case *NixString:
+		return "string"
+	default: // if T below is `NixLambda`, type will be nil
+		return "lambda"
 	}
 }
 
