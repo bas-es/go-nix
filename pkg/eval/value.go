@@ -10,7 +10,7 @@ import (
 )
 
 type NixValue interface {
-	Print(recurse bool) string
+	Print(recurse int) string
 	Compare(val NixValue) bool
 }
 
@@ -21,7 +21,7 @@ type NixValueWithToString interface {
 
 type NixInt int64
 
-func (i NixInt) Print(recurse bool) string {
+func (i NixInt) Print(recurse int) string {
 	return fmt.Sprintf("%d", i)
 }
 
@@ -41,7 +41,7 @@ func (i NixInt) Compare(val NixValue) bool {
 
 type NixFloat float64
 
-func (f NixFloat) Print(recurse bool) string {
+func (f NixFloat) Print(recurse int) string {
 	return fmt.Sprintf("%.6g", f)
 }
 
@@ -61,7 +61,7 @@ func (f NixFloat) Compare(val NixValue) bool {
 
 type NixBool bool
 
-func (b NixBool) Print(recurse bool) string {
+func (b NixBool) Print(recurse int) string {
 	if b {
 		return "true"
 	} else {
@@ -88,7 +88,7 @@ func (b NixBool) Compare(val NixValue) bool {
 // differentiate from the default nil
 type NixNull struct{}
 
-func (n *NixNull) Print(recurse bool) string {
+func (n *NixNull) Print(recurse int) string {
 	return "null"
 }
 
@@ -106,14 +106,18 @@ func (n *NixNull) Compare(val NixValue) bool {
 
 type NixList []*Expression
 
-func (l NixList) Print(recurse bool) string {
-	last := len(l) + 1
-	parts := make([]string, last+1)
-	parts[0], parts[last] = "[", "]"
-	for i, x := range l {
-		parts[i+1] = x.Print()
+func (l NixList) Print(recurse int) string {
+	if recurse == 0 {
+		return "[ ... ]"
+	} else {
+		last := len(l) + 1
+		parts := make([]string, last+1)
+		parts[0], parts[last] = "[", "]"
+		for i, x := range l {
+			parts[i+1] = x.Eval().Print(recurse-1)
+		}
+		return strings.Join(parts, " ")
 	}
-	return strings.Join(parts, " ")
 }
 
 func (l NixList) ToString() string {
@@ -154,16 +158,20 @@ func (l NixList) Compare(val NixValue) bool {
 
 type NixSet map[Sym]*Expression
 
-func (s NixSet) Print(recurse bool) string {
-	last := len(s) + 1
-	parts := make([]string, last+1)
-	parts[0], parts[last] = "{", "}"
-	i := 1
-	for sym, x := range s {
-		parts[i] = fmt.Sprintf("%s = %s;", sym, x.Print())
-		i++
+func (s NixSet) Print(recurse int) string {
+	if recurse == 0 {
+		return "{ ... }"
+	} else {
+		last := len(s) + 1
+		parts := make([]string, last+1)
+		parts[0], parts[last] = "{", "}"
+		i := 1
+		for sym, x := range s {
+			parts[i] = fmt.Sprintf("%s = %s;", sym, x.Eval().Print(recurse-1))
+			i++
+		}
+		return strings.Join(parts, " ")
 	}
-	return strings.Join(parts, " ")
 }
 
 func (s NixSet) ToString() string {
@@ -239,7 +247,7 @@ type NixPath struct {
 	Path string
 }
 
-func (p *NixPath) Print(recurse bool) string {
+func (p *NixPath) Print(recurse int) string {
 	return path.Join(p.Root, p.Path)
 }
 
@@ -265,7 +273,7 @@ type NixString struct {
 	Impurities map[string]string
 }
 
-func (str *NixString) Print(recurse bool) string {
+func (str *NixString) Print(recurse int) string {
 	return `"` + strings.ReplaceAll(str.Content, "\n", `\n`) + `"`
 }
 
@@ -309,7 +317,7 @@ type NixExprLambda struct {
 	Expression  *Expression
 }
 
-func (f *NixExprLambda) Print(recurse bool) string {
+func (f *NixExprLambda) Print(recurse int) string {
 	return "«lambda»"
 }
 
@@ -357,7 +365,7 @@ type NixPrimop struct {
 	ArgNum     int
 }
 
-func (p *NixPrimop) Print(recurse bool) string {
+func (p *NixPrimop) Print(recurse int) string {
 	return "«primop»"
 }
 
@@ -380,7 +388,7 @@ type NixPartialPrimop struct {
 	ArgQueue []*Expression
 }
 
-func (pp *NixPartialPrimop) Print(recurse bool) string {
+func (pp *NixPartialPrimop) Print(recurse int) string {
 	return "«partially applied primop»"
 }
 

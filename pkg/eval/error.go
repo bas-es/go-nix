@@ -32,6 +32,6 @@ func AssertType[T NixValue](val NixValue) T {
 		return tVal
 	} else {
 		var t T
-		panic(fmt.Sprintf("Expected a %s but found %s: %s", PrintType(t), PrintType(val), val.Print(false)))
+		panic(fmt.Sprintf("Expected a %s but found %s: %s", PrintType(t), PrintType(val), val.Print(1)))
 	}
 }

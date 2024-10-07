@@ -27,15 +27,6 @@ type Expression struct {
 	Sym    Sym
 }
 
-// TODO: recursive :p logic should be here
-func (x *Expression) Print() string {
-	if x.Value == nil {
-		return "..."
-	} else {
-		return x.Value.Print(false)
-	}
-}
-
 func (x *Expression) WithNode(n *p.Node) *Expression {
 	y := *x
 	y.Node = n
