@@ -3,6 +3,7 @@ package eval
 import (
 	p "github.com/orivej/go-nix/pkg/parser"
 	"math"
+	"sort"
 )
 
 var builtinsNoUnderline = map[string]bool{
@@ -47,6 +48,7 @@ var builtinsInSet = map[string]NixValue{
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
 	"mul":          &NixPrimop{Func: bMul, ArgNum: 2},
 	"seq":          &NixPrimop{Func: bSeq, ArgNum: 2},
+	"sort":         &NixPrimop{Func: bSort, ArgNum: 2},
 	"stringLength": &NixPrimop{Func: bStringLength, ArgNum: 1},
 	"sub":          &NixPrimop{Func: bSub, ArgNum: 2},
 	"null":         &NixNull{},
@@ -332,6 +334,19 @@ func bPartition(args ...*Expression) NixValue {
 func bSeq(args ...*Expression) NixValue {
 	args[0].Eval()
 	return args[1].Eval()
+}
+
+func bSort(args ...*Expression) NixValue {
+	f := AssertType[NixLambda](args[0].Eval())
+	l_ := AssertType[NixList](args[1].Eval())
+	l := make(NixList, len(l_))
+	copy(l, l_)
+	sort.SliceStable(l, func(i1, i2 int) bool {
+		f1 := AssertType[NixLambda](f.Apply(l[i1]))
+		b := AssertType[NixBool](f1.Apply(l[i2]))
+		return bool(b)
+	})
+	return l
 }
 
 func bStringLength(args ...*Expression) NixValue {
