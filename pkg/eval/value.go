@@ -168,7 +168,7 @@ func (s NixSet) Print(recurse bool) string {
 
 func (s NixSet) ToString() string {
 	if toFuncExpr, exists := s[Intern("__toString")]; exists {
-		toFunc, ok := toFuncExpr.Eval().(NixValueWithApply)
+		toFunc, ok := toFuncExpr.Eval().(NixLambda)
 		if !ok {
 			panic(fmt.Sprintln("value of __toString attribute is not a function or primop"))
 		}
@@ -293,12 +293,12 @@ func (str *NixString) Compare(val NixValue) bool {
 	}
 }
 
-type NixValueWithApply interface {
+type NixLambda interface {
 	NixValue
 	Apply(*Expression) NixValue
 }
 
-type NixFunction struct {
+type NixExprLambda struct {
 	// TODO: position
 	Arg         Sym
 	HasArg      bool
@@ -309,15 +309,15 @@ type NixFunction struct {
 	Expression  *Expression
 }
 
-func (f *NixFunction) Print(recurse bool) string {
+func (f *NixExprLambda) Print(recurse bool) string {
 	return "«lambda»"
 }
 
-func (f *NixFunction) Compare(val NixValue) bool {
+func (f *NixExprLambda) Compare(val NixValue) bool {
 	return false
 }
 
-func (f *NixFunction) Apply(expr *Expression) NixValue {
+func (f *NixExprLambda) Apply(expr *Expression) NixValue {
 	set := make(NixSet, 1)
 	fnExpr := f.Expression
 	scope := fnExpr.Scope.Subscope(set, false)
@@ -469,11 +469,8 @@ func NumCalc(val1 NixValue, val2 NixValue, op p.NodeType) NixValue {
 }
 
 func BinCalc(val1 NixValue, val2 NixValue, op p.NodeType) NixBool {
-	b1, ok1 := val1.(NixBool)
-	b2, ok2 := val2.(NixBool)
-	if !ok1 || !ok2 {
-		panic(fmt.Sprintln("Cannot perform binary calculation"))
-	}
+	b1 := AssertType[NixBool](val1)
+	b2 := AssertType[NixBool](val2)
 	switch op {
 	case p.OpAndNode:
 		return NixBool(b1 && b2)

@@ -203,36 +203,25 @@ func (x *Expression) resolve() {
 		expr := x.WithNode(n.Nodes[0])
 		for _, sym := range attrpath {
 			val := expr.Eval()
-			if set, ok := val.(NixSet); ok {
-				if y, ok := set[sym]; ok {
-					expr = y
-				} else if or != nil {
-					expr = or
-					break
-				} else {
-					throw(fmt.Errorf("%v does not contain %v", y, sym))
-				}
+			set := AssertType[NixSet](val)
+			if y, ok := set[sym]; ok {
+				expr = y
+			} else if or != nil {
+				expr = or
+				break
 			} else {
-				throw(fmt.Errorf("%v is not a set", val))
+				throw(fmt.Errorf("%v does not contain %v", y, sym))
 			}
 		}
 		x.Lower = expr
 
 	case p.WithNode:
-		attrs, ok := x.WithNode(n.Nodes[0]).Eval().(NixSet)
-		if !ok {
-			// TODO: printing attrs here is wrong
-			panic(fmt.Sprintln("argument of with is not a set:", attrs))
-		}
+		attrs := AssertType[NixSet](x.WithNode(n.Nodes[0]).Eval())
 		scope := x.Scope.Subscope(attrs, true)
 		x.Lower = x.WithScoped(n.Nodes[1], scope)
 
 	case p.IfNode:
-		cond, ok := x.WithNode(n.Nodes[0]).Eval().(NixBool)
-		if !ok {
-			// TODO: printing attrs here is wrong
-			panic(fmt.Sprintln("if condition does not evaluate to a boolean value"))
-		}
+		cond := AssertType[NixBool](x.WithNode(n.Nodes[0]).Eval())
 		if cond {
 			x.Lower = x.WithNode(n.Nodes[1])
 		} else {
@@ -240,7 +229,7 @@ func (x *Expression) resolve() {
 		}
 
 	case p.FunctionNode:
-		fn := new(NixFunction)
+		fn := new(NixExprLambda)
 		for c, node := range n.Nodes {
 			if node.Type == p.ArgSetNode {
 				fn.Formal = make(map[Sym]*p.Node, len(node.Nodes))
@@ -268,10 +257,7 @@ func (x *Expression) resolve() {
 		x.Value = fn
 
 	case p.ApplyNode:
-		arg0, ok := x.WithNode(n.Nodes[0]).Eval().(NixValueWithApply)
-		if !ok {
-			panic("calling something not a function or primop")
-		}
+		arg0 := AssertType[NixLambda](x.WithNode(n.Nodes[0]).Eval())
 		arg := x.WithNode(n.Nodes[1])
 		x.Value = arg0.Apply(arg)
 
@@ -287,26 +273,14 @@ func (x *Expression) resolve() {
 		x.Value = NumCalc(add1, add2, p.OpAddNode)
 
 	case p.OpConcatNode:
-		add1 := x.WithNode(n.Nodes[0]).Eval()
-		add2 := x.WithNode(n.Nodes[1]).Eval()
-		if list1, ok := add1.(NixList); ok {
-			if list2, ok := add2.(NixList); ok {
-				x.Value = list1.Concat(list2)
-				return
-			}
-		}
-		panic(fmt.Sprintln("cannot concat two values in one or two of which is not list"))
+		list1 := AssertType[NixList](x.WithNode(n.Nodes[0]).Eval())
+		list2 := AssertType[NixList](x.WithNode(n.Nodes[1]).Eval())
+		x.Value = list1.Concat(list2)
 
 	case p.OpUpdateNode:
-		add1 := x.WithNode(n.Nodes[0]).Eval()
-		add2 := x.WithNode(n.Nodes[1]).Eval()
-		if set1, ok := add1.(NixSet); ok {
-			if set2, ok := add2.(NixSet); ok {
-				x.Value = set1.Update(set2)
-				return
-			}
-		}
-		panic(fmt.Sprintln("cannot update two values in one or two of which is not set"))
+		set1 := AssertType[NixSet](x.WithNode(n.Nodes[0]).Eval())
+		set2 := AssertType[NixSet](x.WithNode(n.Nodes[1]).Eval())
+		x.Value = set1.Update(set2)
 
 	case p.OpReduceNode, p.OpMultiplyNode, p.OpDivideNode, p.OpGreaterNode, p.OpLessNode, p.OpGeqNode, p.OpLeqNode:
 		num1 := x.WithNode(n.Nodes[0]).Eval()
@@ -329,12 +303,8 @@ func (x *Expression) resolve() {
 		x.Value = BinCalc(b1, b2, nt)
 
 	case p.OpNotNode:
-		val := x.WithNode(n.Nodes[0]).Eval()
-		if b, ok := val.(NixBool); ok {
-			x.Value = NixBool(!b)
-		} else {
-			panic(fmt.Sprintln("cannot negate, not a boolean"))
-		}
+		b := AssertType[NixBool](x.WithNode(n.Nodes[0]).Eval())
+		x.Value = NixBool(!b)
 
 	case p.OpEqNode, p.OpNeqNode:
 		val1 := x.WithNode(n.Nodes[0]).Eval()

@@ -44,6 +44,7 @@ var builtinsInSet = map[string]NixValue{
 	"throw":        &NixPrimop{Func: bThrow, ArgNum: 1},
 	"toString":     &NixPrimop{Func: bToString, ArgNum: 1},
 	"true":         NixBool(true),
+	"typeOf":       &NixPrimop{Func: bTypeOf, ArgNum: 1},
 }
 
 var DefaultScope = func() *Scope {
@@ -67,20 +68,11 @@ func bAdd(args ...*Expression) NixValue {
 }
 
 func bAll(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.all is not a function or primop")
-	}
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.all is not a list")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
 	result := true
 	for _, elem := range l {
-		cond, ok := f.Apply(elem).(NixBool)
-		if !ok {
-			panic("return value for the nth element of list is not a bool")
-		}
+		cond := AssertType[NixBool](f.Apply(elem))
 		if !cond {
 			result = false
 		}
@@ -89,20 +81,11 @@ func bAll(args ...*Expression) NixValue {
 }
 
 func bAny(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.any is not a function or primop")
-	}
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.any is not a list")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
 	result := false
 	for _, elem := range l {
-		cond, ok := f.Apply(elem).(NixBool)
-		if !ok {
-			panic("return value for the nth element of list is not a bool")
-		}
+		cond := AssertType[NixBool](f.Apply(elem))
 		if cond {
 			result = true
 		}
@@ -111,10 +94,7 @@ func bAny(args ...*Expression) NixValue {
 }
 
 func bAttrNames(args ...*Expression) NixValue {
-	set, ok := args[0].Eval().(NixSet)
-	if !ok {
-		panic("argument of builtins.attrNames is not a set")
-	}
+	set := AssertType[NixSet](args[0].Eval())
 	keys := make([]string, 0, len(set))
 	for sym, _ := range set {
 		keys = append(keys, sym.String())
@@ -128,11 +108,7 @@ func bAttrNames(args ...*Expression) NixValue {
 }
 
 func bAttrValues(args ...*Expression) NixValue {
-	set, ok := args[0].Eval().(NixSet)
-
-	if !ok {
-		panic("argument of builtins.attrValues is not a set")
-	}
+	set := AssertType[NixSet](args[0].Eval())
 	keys := make([]string, 0, len(set))
 	for sym, _ := range set {
 		keys = append(keys, sym.String())
@@ -146,57 +122,33 @@ func bAttrValues(args ...*Expression) NixValue {
 }
 
 func bCatAttrs(args ...*Expression) NixValue {
-	name, ok := args[0].Eval().(*NixString)
-	if !ok {
-		panic("first argument of builtins.catAttrs is not a string")
-	}
+	name := AssertType[*NixString](args[0].Eval())
 	sym := Intern(name.Content)
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.catAttrs is not a list")
-	}
+	l := AssertType[NixList](args[1].Eval())
 	result := make(NixList, 0, len(l))
 	for _, expr := range l {
-		set, ok := expr.Eval().(NixSet)
-		if !ok {
-			panic("item of list supplied to builtins.catAttrs is not a set")
-		}
+		set := AssertType[NixSet](expr.Eval())
 		result = append(result, set[sym])
 	}
 	return result
 }
 
 func bConcatLists(args ...*Expression) NixValue {
-	list, ok := args[0].Eval().(NixList)
-	if !ok {
-		panic("argument of builtins.attrValues is not a set")
-	}
+	list := AssertType[NixList](args[0].Eval())
 	result := make(NixList, 0)
 	for _, expr := range list {
-		l, ok := expr.Eval().(NixList)
-		if !ok {
-			panic("child item of list is not list")
-		}
+		l := AssertType[NixList](expr.Eval())
 		result = append(result, l...)
 	}
 	return result
 }
 
 func bFilter(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.filter is not a function or primop")
-	}
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.filter is not a list")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
 	result := make(NixList, 0, len(l))
 	for _, elem := range l {
-		cond, ok := f.Apply(elem).(NixBool)
-		if !ok {
-			panic("return value for the nth element of list is not a bool")
-		}
+		cond := AssertType[NixBool](f.Apply(elem))
 		if cond {
 			result = append(result, elem)
 		}
@@ -205,10 +157,7 @@ func bFilter(args ...*Expression) NixValue {
 }
 
 func bFunctionArgs(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(*NixFunction)
-	if !ok {
-		panic("argument of builtins.throw is not a function")
-	}
+	f := AssertType[*NixExprLambda](args[0].Eval())
 	if f.HasFormal {
 		result := make(NixSet, len(f.Formal))
 		for sym, node := range f.Formal {
@@ -225,14 +174,8 @@ func bFunctionArgs(args ...*Expression) NixValue {
 }
 
 func bGenList(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.genList is not a function or a primop")
-	}
-	num, ok := args[1].Eval().(NixInt)
-	if !ok {
-		panic("second argument of builtins.genList is not an integer")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	num := AssertType[NixInt](args[1].Eval())
 	result := make(NixList, 0, num)
 	for i := 0; i < int(num); i++ {
 		val := f.Apply(&Expression{Value: NixInt(i)})
@@ -242,10 +185,7 @@ func bGenList(args ...*Expression) NixValue {
 }
 
 func bHead(args ...*Expression) NixValue {
-	l, ok := args[0].Eval().(NixList)
-	if !ok {
-		panic("argument of builtins.head is not a list")
-	}
+	l := AssertType[NixList](args[0].Eval())
 	if len(l) == 0 {
 		panic("argument of builtins.tail is an empty list")
 	}
@@ -268,7 +208,7 @@ func bIsFloat(args ...*Expression) NixValue {
 }
 
 func bIsFunction(args ...*Expression) NixValue {
-	_, ok := args[0].Eval().(NixValueWithApply)
+	_, ok := args[0].Eval().(NixLambda)
 	return NixBool(ok)
 }
 
@@ -298,14 +238,8 @@ func bIsString(args ...*Expression) NixValue {
 }
 
 func bMap(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.map is not a function or primop")
-	}
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.map is not a list")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
 	result := make(NixList, len(l))
 	for n, elem := range l {
 		result[n] = &Expression{Value: f.Apply(elem)}
@@ -314,25 +248,16 @@ func bMap(args ...*Expression) NixValue {
 }
 
 func bPartition(args ...*Expression) NixValue {
-	f, ok := args[0].Eval().(NixValueWithApply)
-	if !ok {
-		panic("first argument of builtins.partition not a function or primop")
-	}
-	l, ok := args[1].Eval().(NixList)
-	if !ok {
-		panic("second argument of builtins.partition is not a list")
-	}
+	f := AssertType[NixLambda](args[0].Eval())
+	l := AssertType[NixList](args[1].Eval())
 	right := make(NixList, 0, len(l))
 	wrong := make(NixList, 0, len(l))
 	for _, elem := range l {
-		if b, ok := f.Apply(elem).(NixBool); ok {
-			if b {
-				right = append(right, elem)
-			} else {
-				wrong = append(wrong, elem)
-			}
+		b := AssertType[NixBool](f.Apply(elem))
+		if b {
+			right = append(right, elem)
 		} else {
-			panic("the return value of function in builtins.partition")
+			wrong = append(wrong, elem)
 		}
 	}
 	result := make(NixSet, 2)
@@ -342,10 +267,7 @@ func bPartition(args ...*Expression) NixValue {
 }
 
 func bTail(args ...*Expression) NixValue {
-	l, ok := args[0].Eval().(NixList)
-	if !ok {
-		panic("argument of builtins.tail is not a list")
-	}
+	l := AssertType[NixList](args[0].Eval())
 	if len(l) == 0 {
 		panic("argument of builtins.tail is an empty list")
 	}
@@ -361,9 +283,10 @@ func bToString(args ...*Expression) NixValue {
 }
 
 func bThrow(args ...*Expression) NixValue {
-	str, ok := args[0].Eval().(*NixString)
-	if !ok {
-		panic("argument of builtins.throw is not a string")
-	}
+	str := AssertType[*NixString](args[0].Eval())
 	panic(str.Content)
+}
+
+func bTypeOf(args ...*Expression) NixValue {
+	return &NixString{Content: PrintType(args[0].Eval())}
 }
