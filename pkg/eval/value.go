@@ -114,7 +114,7 @@ func (l NixList) Print(recurse int) string {
 		parts := make([]string, last+1)
 		parts[0], parts[last] = "[", "]"
 		for i, x := range l {
-			parts[i+1] = x.Eval().Print(recurse-1)
+			parts[i+1] = x.Eval().Print(recurse - 1)
 		}
 		return strings.Join(parts, " ")
 	}
@@ -360,13 +360,14 @@ func (f *NixExprLambda) Apply(expr *Expression) NixValue {
 
 // Builtin functions
 type NixPrimop struct {
-	Func       func(...*Expression) NixValue
-	DocComment string
-	ArgNum     int
+	Func   func(...*Expression) NixValue
+	Doc    string
+	Name   string
+	ArgNum int
 }
 
 func (p *NixPrimop) Print(recurse int) string {
-	return "«primop»"
+	return fmt.Sprintf("«primop %s»", p.Name)
 }
 
 func (p *NixPrimop) Compare(val NixValue) bool {
@@ -389,7 +390,7 @@ type NixPartialPrimop struct {
 }
 
 func (pp *NixPartialPrimop) Print(recurse int) string {
-	return "«partially applied primop»"
+	return fmt.Sprintf("«primop %s, with %d/%d argument»", pp.Primop.Name, len(pp.ArgQueue), pp.Primop.ArgNum)
 }
 
 func (pp *NixPartialPrimop) Compare(val NixValue) bool {
