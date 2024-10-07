@@ -158,17 +158,24 @@ func (l NixList) Compare(val NixValue) bool {
 
 type NixSet map[Sym]*Expression
 
+func (s NixSet) Iterator() []Sym {
+	keys := make([]Sym, 0, len(s))
+	for sym, _ := range s {
+		keys = append(keys, sym)
+	}
+	SortSym(keys)
+	return keys
+}
+
 func (s NixSet) Print(recurse int) string {
 	if recurse == 0 {
 		return "{ ... }"
 	} else {
-		last := len(s) + 1
-		parts := make([]string, last+1)
-		parts[0], parts[last] = "{", "}"
-		i := 1
-		for sym, x := range s {
-			parts[i] = fmt.Sprintf("%s = %s;", sym, x.Eval().Print(recurse-1))
-			i++
+		length := len(s)
+		parts := make([]string, length+2)
+		parts[0], parts[length+1] = "{", "}"
+		for i, key := range s.Iterator() {
+			parts[i+1] = fmt.Sprintf("%s = %s;", key.String(), s[key].Eval().Print(recurse-1))
 		}
 		return strings.Join(parts, " ")
 	}

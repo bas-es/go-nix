@@ -1,5 +1,10 @@
 package eval
 
+import (
+	"slices"
+	"strings"
+)
+
 type Sym int
 
 type Symtab struct {
@@ -34,4 +39,11 @@ func Intern(name string) Sym {
 
 func (sym Sym) String() string {
 	return globalSymtab.Name(sym)
+}
+
+// Sort syms for declarative printing
+func SortSym(list []Sym) {
+	slices.SortFunc(list, func(a, b Sym) int {
+		return strings.Compare(a.String(), b.String())
+	})
 }

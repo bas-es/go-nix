@@ -3,7 +3,6 @@ package eval
 import (
 	p "github.com/orivej/go-nix/pkg/parser"
 	"math"
-	"sort"
 )
 
 var builtinsNoUnderline = map[string]bool{
@@ -108,28 +107,18 @@ func bAny(args ...*Expression) NixValue {
 
 func bAttrNames(args ...*Expression) NixValue {
 	set := AssertType[NixSet](args[0].Eval())
-	keys := make([]string, 0, len(set))
-	for sym, _ := range set {
-		keys = append(keys, sym.String())
-	}
-	sort.Strings(keys)
 	result := make(NixList, 0, len(set))
-	for _, key := range keys {
-		result = append(result, &Expression{Value: &NixString{Content: key}})
+	for _, sym := range set.Iterator() {
+		result = append(result, &Expression{Value: &NixString{Content: sym.String()}})
 	}
 	return result
 }
 
 func bAttrValues(args ...*Expression) NixValue {
 	set := AssertType[NixSet](args[0].Eval())
-	keys := make([]string, 0, len(set))
-	for sym, _ := range set {
-		keys = append(keys, sym.String())
-	}
-	sort.Strings(keys)
 	result := make(NixList, 0, len(set))
-	for _, key := range keys {
-		result = append(result, set[Intern(key)])
+	for _, sym := range set.Iterator() {
+		result = append(result, set[sym])
 	}
 	return result
 }
