@@ -3,6 +3,7 @@ package eval
 import (
 	p "github.com/orivej/go-nix/pkg/parser"
 	"math"
+	"regexp"
 	"sort"
 )
 
@@ -46,6 +47,7 @@ var builtinsInSet = map[string]NixValue{
 	"length":       &NixPrimop{Func: bLength, ArgNum: 1},
 	"lessThan":     &NixPrimop{Func: bLessThan, ArgNum: 2},
 	"map":          &NixPrimop{Func: bMap, ArgNum: 2},
+	"match":        &NixPrimop{Func: bMatch, ArgNum: 2},
 	"mul":          &NixPrimop{Func: bMul, ArgNum: 2},
 	"seq":          &NixPrimop{Func: bSeq, ArgNum: 2},
 	"sort":         &NixPrimop{Func: bSort, ArgNum: 2},
@@ -304,6 +306,25 @@ func bMap(args ...*Expression) NixValue {
 	result := make(NixList, len(l))
 	for n, elem := range l {
 		result[n] = &Expression{Value: f.Apply(elem)}
+	}
+	return result
+}
+
+func bMatch(args ...*Expression) NixValue {
+	reStr := AssertType[*NixString](args[0].Eval())
+	str := AssertType[*NixString](args[1].Eval())
+	re, err := regexp.CompilePOSIX(reStr.Content)
+	if err != nil {
+		panic(err)
+	}
+	re.Longest()
+	matches := re.FindStringSubmatch(str.Content)
+	if matches == nil || matches[0] != str.Content {
+		return &NixNull{}
+	}
+	result := make(NixList, 0, len(matches))
+	for _, match := range matches[1:] {
+		result = append(result, &Expression{Value: &NixString{Content: match}})
 	}
 	return result
 }
