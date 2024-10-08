@@ -24,6 +24,7 @@ var builtinsInSet = map[string]NixValue{
 	"attrNames":    &NixPrimop{Func: bAttrNames, ArgNum: 1},
 	"attrValues":   &NixPrimop{Func: bAttrValues, ArgNum: 1},
 	"catAttrs":     &NixPrimop{Func: bCatAttrs, ArgNum: 2},
+	"ceil":         &NixPrimop{Func: bCeil, ArgNum: 1},
 	"concatLists":  &NixPrimop{Func: bConcatLists, ArgNum: 1},
 	"div":          &NixPrimop{Func: bDiv, ArgNum: 2},
 	"elem":         &NixPrimop{Func: bElem, ArgNum: 2},
@@ -34,6 +35,7 @@ var builtinsInSet = map[string]NixValue{
 	"fromJSON":     &NixPrimop{Func: bFromJSON, ArgNum: 1},
 	"functionArgs": &NixPrimop{Func: bFunctionArgs, ArgNum: 1},
 	"genList":      &NixPrimop{Func: bGenList, ArgNum: 2},
+	"getAttr":      &NixPrimop{Func: bGetAttr, ArgNum: 2},
 	"groupBy":      &NixPrimop{Func: bGroupBy, ArgNum: 2},
 	"head":         &NixPrimop{Func: bHead, ArgNum: 1},
 	"isAttrs":      &NixPrimop{Func: bIsAttrs, ArgNum: 1},
@@ -141,6 +143,11 @@ func bCatAttrs(args ...*Expression) NixValue {
 	return result
 }
 
+func bCeil(args ...*Expression) NixValue {
+	fl := AssertType[NixFloat](args[0].Eval())
+	return NixInt(math.Ceil(float64(fl)))
+}
+
 func bConcatLists(args ...*Expression) NixValue {
 	list := AssertType[NixList](args[0].Eval())
 	result := make(NixList, 0)
@@ -224,6 +231,16 @@ func bGenList(args ...*Expression) NixValue {
 		result = append(result, &Expression{Value: val})
 	}
 	return result
+}
+
+func bGetAttr(args ...*Expression) NixValue {
+	name := AssertType[*NixString](args[0].Eval())
+	set := AssertType[NixSet](args[1].Eval())
+	if expr, exists := set[Intern(name.Content)]; exists {
+		return expr.Eval()
+	} else {
+		panic("set doesn't have given attribute name")
+	}
 }
 
 func bGroupBy(args ...*Expression) NixValue {
