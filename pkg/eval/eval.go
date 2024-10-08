@@ -24,7 +24,6 @@ type Expression struct {
 	Scope  *Scope
 	Parser *p.Parser
 	Node   *p.Node
-	Sym    Sym
 }
 
 func (x *Expression) WithNode(n *p.Node) *Expression {
@@ -71,9 +70,6 @@ func (x *Expression) resolve() {
 	pr := x.Parser
 	n := x.Node
 	nt := x.Node.Type
-	if x.Sym != 0 {
-		nt = p.IDNode
-	}
 	switch nt {
 	default:
 		panic(fmt.Sprintln("unsupported node type:", n.Type))
@@ -164,8 +160,7 @@ func (x *Expression) resolve() {
 			case p.InheritNode:
 				for _, interpid := range c.Nodes[0].Nodes {
 					y := x.WithNode(interpid)
-					y.Sym = Intern(y.attrString())
-					set.Bind1(y.Sym, y)
+					set.Bind1(Intern(y.attrString()), y)
 				}
 			case p.InheritFromNode:
 				// This is not as lazy as it can be.
