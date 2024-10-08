@@ -70,12 +70,13 @@ var DefaultScope = func() *Scope {
 	mainSet := make(NixSet, len(builtinsInSet)+1)
 	builtinsSet := make(NixSet, len(builtinsInSet))
 	for name, val := range builtinsInSet {
+		sym := Intern(name)
 		if primop, ok := val.(*NixPrimop); ok {
-			primop.Name = name
+			primop.Sym = sym
 		}
-		builtinsSet[Intern(name)] = &Expression{Value: val}
+		builtinsSet[sym] = &Expression{Value: val}
 		if _, exists := builtinsNoUnderline[name]; exists {
-			mainSet[Intern(name)] = &Expression{Value: val}
+			mainSet[sym] = &Expression{Value: val}
 		} else {
 			mainSet[Intern("__"+name)] = &Expression{Value: val}
 		}

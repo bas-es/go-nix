@@ -371,12 +371,12 @@ func (f *NixExprLambda) Apply(expr *Expression) NixValue {
 type NixPrimop struct {
 	Func   func(...*Expression) NixValue
 	Doc    string
-	Name   string
+	Sym    Sym
 	ArgNum int
 }
 
 func (p *NixPrimop) Print(recurse int) string {
-	return fmt.Sprintf("«primop %s»", p.Name)
+	return fmt.Sprintf("«primop %s»", p.Sym.String())
 }
 
 func (p *NixPrimop) Compare(val NixValue) bool {
@@ -399,7 +399,7 @@ type NixPartialPrimop struct {
 }
 
 func (pp *NixPartialPrimop) Print(recurse int) string {
-	return fmt.Sprintf("«primop %s, with %d/%d argument»", pp.Primop.Name, len(pp.ArgQueue), pp.Primop.ArgNum)
+	return fmt.Sprintf("«primop %s, with %d/%d argument»", pp.Primop.Sym.String(), len(pp.ArgQueue), pp.Primop.ArgNum)
 }
 
 func (pp *NixPartialPrimop) Compare(val NixValue) bool {
