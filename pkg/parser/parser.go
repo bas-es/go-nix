@@ -44,7 +44,7 @@ func (p *Parser) Lex(lval *yySymType) int {
 }
 
 func (p *Parser) Error(s string) {
-	s = p.tokens[p.prev].String() + ": " + s
+	s = p.TokenAt(p.prev) + s
 	p.errors = append(p.errors, s)
 }
 
@@ -105,8 +105,7 @@ func parse(lr *lexResult) (p *Parser, err error) {
 	if len(p.errors) == 0 {
 		return
 	}
-	path := p.file.Name()
-	err = fmt.Errorf("%s: %s", path, strings.Join(p.errors, "; "))
+	err = fmt.Errorf("%s", strings.Join(p.errors, "; "))
 	return
 }
 

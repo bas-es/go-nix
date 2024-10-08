@@ -21,7 +21,7 @@ var fileset = token.NewFileSet()
 
 func newLexResult(path string, size int) *lexResult {
 	if path == "" {
-		path = "(string)"
+		path = "«string»"
 	}
 	return &lexResult{file: fileset.AddFile(path, -1, size)}
 }
@@ -40,13 +40,17 @@ func (r *lexResult) TokenString(i int) string {
 	return string(r.TokenBytes(i))
 }
 
+func (r *lexResult) TokenAt(i int) string {
+	return r.At(r.tokens[i].pos)
+}
+
 func (r *lexResult) Last() string {
 	tok := r.tokens[len(r.tokens)-1]
 	return r.At(tok.pos) + symString(tok.sym)
 }
 
-func (r *lexResult) Errorf(format string, a ...interface{}) error {
-	return fmt.Errorf("%s "+format, append([]interface{}{r.Last()}, a...))
+func (r *lexResult) Errorf(format string) error {
+	return fmt.Errorf("%s "+format, r.Last())
 }
 
 func symString(sym int) string {
@@ -54,10 +58,6 @@ func symString(sym int) string {
 		return yyToknames[sym-yyPrivate+1]
 	}
 	return fmt.Sprintf("'%c'", sym)
-}
-
-func (tok lexerToken) String() string {
-	return fmt.Sprintf("%d-%d:%s", tok.pos, tok.end, symString(tok.sym))
 }
 
 func lex(data []byte, path string) (r *lexResult, err error) {

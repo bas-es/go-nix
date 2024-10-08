@@ -136,7 +136,7 @@ func lexData(data []byte, r *lexResult) (err error) {
 		}
 		iprev, prevsym := backrefs.Pop()
 		if prevsym != sym {
-			err = r.Errorf("does not close %v", r.tokens[iprev])
+			err = r.Errorf(fmt.Sprintf("does not close %v", r.tokens[iprev]))
 			return false
 		}
 		r.tokens[len(r.tokens)-1].prev = iprev
