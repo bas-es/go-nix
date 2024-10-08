@@ -451,8 +451,6 @@ func numCalc[T NixNumber](num1, num2 T, op p.NodeType) NixValue {
 		return NixBool(num1 >= num2)
 	case p.OpLeqNode:
 		return NixBool(num1 <= num2)
-	case p.OpEqNode:
-		return NixBool(num1 == num2)
 	default:
 		panic(fmt.Sprintln("wrong operation"))
 	}
