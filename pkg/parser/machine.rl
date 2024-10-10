@@ -174,8 +174,7 @@ func lexData(data []byte, r *lexResult) (err error) {
 		err = r.Errorf("precedes the token that failed to lex")
 	} else if len(backrefs) != 0 {
 		iprev, _ := backrefs.Pop()
-		prev := r.tokens[iprev]
-		err = fmt.Errorf("%s%s is not terminated", r.At(prev.pos), symString(prev.sym))
+		err = &LexerError{Pos: r.TokenPos(iprev), Desc: fmt.Sprintf("%s is not terminated", r.TokenSymString(iprev))}
 	}
 	return
 }

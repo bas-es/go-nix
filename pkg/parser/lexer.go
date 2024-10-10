@@ -17,6 +17,21 @@ type lexResult struct {
 	comments []lexerToken
 }
 
+type LexPosition token.Position
+
+func (p *LexPosition) String() string {
+	return fmt.Sprintf("%s:%d:%d", p.Filename, p.Line, p.Column)
+}
+
+type LexerError struct {
+	Pos *LexPosition
+	Desc string
+}
+
+func (e *LexerError) Error() string {
+	return fmt.Sprintf("%s: syntax error: %s", e.Pos.String(), e.Desc)
+}
+
 var fileset = token.NewFileSet()
 
 func newLexResult(path string, size int) *lexResult {
@@ -26,9 +41,9 @@ func newLexResult(path string, size int) *lexResult {
 	return &lexResult{file: fileset.AddFile(path, -1, size)}
 }
 
-func (r *lexResult) At(offset int) string {
-	p := r.file.Position(r.file.Pos(offset))
-	return fmt.Sprintf("%s:%d:%d: ", p.Filename, p.Line, p.Column)
+func (r *lexResult) TokenPos(i int) *LexPosition {
+	p := LexPosition(r.file.Position(r.file.Pos(r.tokens[i].pos)))
+	return &p
 }
 
 func (r *lexResult) TokenBytes(i int) []byte {
@@ -40,24 +55,17 @@ func (r *lexResult) TokenString(i int) string {
 	return string(r.TokenBytes(i))
 }
 
-func (r *lexResult) TokenAt(i int) string {
-	return r.At(r.tokens[i].pos)
-}
-
-func (r *lexResult) Last() string {
-	tok := r.tokens[len(r.tokens)-1]
-	return r.At(tok.pos) + symString(tok.sym)
-}
-
-func (r *lexResult) Errorf(format string) error {
-	return fmt.Errorf("%s "+format, r.Last())
-}
-
-func symString(sym int) string {
+func (r *lexResult) TokenSymString(i int) string {
+	sym := r.tokens[i].sym
 	if sym >= yyPrivate-1 && sym < yyPrivate+len(yyToknames) {
 		return yyToknames[sym-yyPrivate+1]
 	}
 	return fmt.Sprintf("'%c'", sym)
+}
+
+func (r *lexResult) Errorf(format string) error {
+	last := len(r.tokens)-1
+	return &LexerError{Pos: r.TokenPos(last), Desc: fmt.Sprintf("%s %s", r.TokenSymString(last), format)}
 }
 
 func lex(data []byte, path string) (r *lexResult, err error) {

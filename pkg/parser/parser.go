@@ -5,7 +5,6 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Node struct {
@@ -18,11 +17,34 @@ type Node struct {
 
 const nodesBlock = 1024
 
+type ParserError struct {
+	Pos *LexPosition
+	Desc string
+}
+
+func (e *ParserError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Pos.String(), e.Desc)
+}
+
+type ParserErrors []*ParserError
+
+func (es ParserErrors) Error() string {
+	var error string
+	for i, e := range es {
+		if i == 0 {
+			error = e.Error()
+		} else {
+			error = "\n" + e.Error()
+		}
+	}
+	return error
+}
+
 type Parser struct {
 	*lexResult
 	prev   int
 	last   int
-	errors []string
+	errors ParserErrors
 
 	nodes    []Node
 	nextNode int
@@ -44,8 +66,8 @@ func (p *Parser) Lex(lval *yySymType) int {
 }
 
 func (p *Parser) Error(s string) {
-	s = p.TokenAt(p.prev) + s
-	p.errors = append(p.errors, s)
+	err := &ParserError{Pos: p.TokenPos(p.prev), Desc: s}
+	p.errors = append(p.errors, err)
 }
 
 func (p *Parser) NewNode(t NodeType, tokens ...int) *Node {
@@ -105,7 +127,7 @@ func parse(lr *lexResult) (p *Parser, err error) {
 	if len(p.errors) == 0 {
 		return
 	}
-	err = fmt.Errorf("%s", strings.Join(p.errors, "; "))
+	err = p.errors
 	return
 }
 
