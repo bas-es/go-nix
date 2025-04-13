@@ -1,19 +1,19 @@
 package parser
 
 import (
-	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
 	"github.com/alecthomas/assert"
+	"github.com/bas-es/go-nix/pkg/util"
 	"github.com/orivej/e"
-	"github.com/orivej/go-nix/nix/util"
 )
 
 func TestLexOne(t *testing.T) {
 	skipWithoutNixPath(t)
 	path := attrsets
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	e.Exit(err)
 	r, err := lex(data, path)
 	t.Log(r.tokens)
@@ -45,7 +45,7 @@ func TestLexAll(t *testing.T) {
 
 func BenchmarkLex(b *testing.B) {
 	path := allPackages
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	e.Exit(err)
 
 	for i := 0; i < b.N; i++ {

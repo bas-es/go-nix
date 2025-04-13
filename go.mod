@@ -1,4 +1,4 @@
-module github.com/orivej/go-nix
+module github.com/bas-es/go-nix
 
 go 1.22.7
 
@@ -14,10 +14,8 @@ require (
 	github.com/alecthomas/repr v0.0.0-20180818092828-117648cd9897 // indirect
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.3 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
-	github.com/stretchr/testify v1.2.2 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/sys v0.0.0-20180828065106-d99a578cf41b // indirect
 )

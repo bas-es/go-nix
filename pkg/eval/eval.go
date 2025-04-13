@@ -2,10 +2,11 @@ package eval
 
 import (
 	"fmt"
-	"github.com/orivej/e"
-	p "github.com/orivej/go-nix/pkg/parser"
 	"strconv"
 	"strings"
+
+	p "github.com/bas-es/go-nix/pkg/parser"
+	"github.com/orivej/e"
 )
 
 type Scope struct {
@@ -302,8 +303,6 @@ func (x *Expression) resolve() {
 			x.Value = NixBool(!result)
 		}
 	}
-
-	return
 }
 
 func (x *Expression) Select1(sym Sym) *Expression {

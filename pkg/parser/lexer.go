@@ -5,7 +5,7 @@ package parser
 import (
 	"fmt"
 	"go/token"
-	"io/ioutil"
+	"os"
 )
 
 type lexerToken struct{ sym, pos, end, prev int }
@@ -24,7 +24,7 @@ func (p *LexPosition) String() string {
 }
 
 type LexerError struct {
-	Pos *LexPosition
+	Pos  *LexPosition
 	Desc string
 }
 
@@ -64,8 +64,13 @@ func (r *lexResult) TokenSymString(i int) string {
 }
 
 func (r *lexResult) Errorf(format string) error {
-	last := len(r.tokens)-1
-	return &LexerError{Pos: r.TokenPos(last), Desc: fmt.Sprintf("%s %s", r.TokenSymString(last), format)}
+	last := len(r.tokens) - 1
+	return &LexerError{Pos: r.Last(), Desc: fmt.Sprintf("%s %s", r.TokenSymString(last), format)}
+}
+
+func (r *lexResult) Last() *LexPosition {
+	last := len(r.tokens) - 1
+	return r.TokenPos(last)
 }
 
 func lex(data []byte, path string) (r *lexResult, err error) {
@@ -75,7 +80,7 @@ func lex(data []byte, path string) (r *lexResult, err error) {
 }
 
 func lexFile(path string) (r *lexResult, err error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}

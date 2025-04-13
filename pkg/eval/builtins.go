@@ -1,7 +1,7 @@
 package eval
 
 import (
-	p "github.com/orivej/go-nix/pkg/parser"
+	p "github.com/bas-es/go-nix/pkg/parser"
 	"math"
 	"regexp"
 	"sort"

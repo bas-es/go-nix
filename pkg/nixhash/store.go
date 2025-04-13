@@ -4,7 +4,7 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/orivej/go-nix/internal"
+	"github.com/bas-es/go-nix/internal"
 )
 
 const storeDir = "/nix/store"

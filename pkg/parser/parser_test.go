@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
+	"github.com/bas-es/go-nix/pkg/util"
 	"github.com/orivej/e"
-	"github.com/orivej/go-nix/nix/util"
 )
 
 func TestParseOne(t *testing.T) {

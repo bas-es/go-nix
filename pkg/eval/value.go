@@ -4,9 +4,10 @@ package eval
 
 import (
 	"fmt"
-	p "github.com/orivej/go-nix/pkg/parser"
 	"path"
 	"strings"
+
+	p "github.com/bas-es/go-nix/pkg/parser"
 )
 
 type NixValue interface {
@@ -160,7 +161,7 @@ type NixSet map[Sym]*Expression
 
 func (s NixSet) Iterator() []Sym {
 	keys := make([]Sym, 0, len(s))
-	for sym, _ := range s {
+	for sym := range s {
 		keys = append(keys, sym)
 	}
 	SortSym(keys)
