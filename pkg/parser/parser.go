@@ -144,5 +144,4 @@ func ParseString(s string) (p *Parser, err error) {
 	if err != nil {
 		return
 	}
-	return parse(lr)
-}
+	return parse(lr) }

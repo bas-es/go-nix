@@ -62,6 +62,6 @@ func printSymHist(t *testing.T, hist map[int]int) {
 	}
 	sort.Slice(keys, func(i, j int) bool { return hist[keys[i]] < hist[keys[j]] })
 	for _, k := range keys {
-		t.Log(hist[k], symString(k))
+		t.Log(hist[k], k)
 	}
 }
